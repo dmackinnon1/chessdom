@@ -18,10 +18,6 @@ gameType.isBishop = function() {
 gameType.isQueen = function() {
 	return gameType.type === "queen";
 }
-//Classes for generating knight tours, and kings tours
-/*
-* A Cell is a square on the chessboard.
-*/
 class Cell {
 		
 	constructor(rowNum, colNum, board) {
@@ -258,9 +254,6 @@ class Cell {
 	}
 };
 
-/*
-* A chessboard of configurable size.
-*/
 class Board {
 
 	constructor(size) {
@@ -346,22 +339,7 @@ function getDiv(i,j) {
 var gameDisplay = {};
 gameDisplay.map = "";
 gameDisplay.score = "";
-/**
-* Some events are fired when these elements are updated
-* refreshStatus - called when status is updated
-* refreshMap - called when map is updated
-* refreshSteps - called when misstep count is updated
-* 
-* These use the 'evnts' object to invoke any registered callbacks
-*/
 
-/**
-* utilities
-*/
-function randomInt(lessThan){
-	var selection = Math.floor(Math.random()*(lessThan));
-	return selection;
-};
 
 function svgMap(pieces, cover, size) {
 	var svg = new Bldr("svg");

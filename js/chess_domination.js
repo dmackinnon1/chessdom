@@ -1,16 +1,3 @@
-//references common framework from kixote_base.js
-
-/*
-* clicking on a cell will place a piece or remove a piece from the board.
-* for each piece all accessible cells will be highlighted (based on the piece type)
-* game will track all covered cells - goal is to cover all cells on the board
-* game will track all over-covered cells - secondary goal would be to minimize these
-* -- add a piece list
-* -- if a piece is a neighbor, it is covered... add it to the covered list
-* -- a function for determining which pieces are covered
-* -- a function for determining double/triple covered cells: over covered score
-*
-*/
 class Domination {	
 	
 	constructor(board) {
@@ -20,10 +7,6 @@ class Domination {
 		this.cover =[];
 	}
 
-	toString(){
-		return "" + this.path + ": " + this.path.isTour(); 
-	}
-	
 	getBoard() {
 		return this.board;
 	}
