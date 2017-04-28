@@ -78,7 +78,7 @@ $(document).ready(function(){
 
 	$(".typeButton").on("click", function(event){
 		gameType.type = event.currentTarget.id;
-		refresh();
+		setButtons();
 	});
 });
 
@@ -132,7 +132,17 @@ About </button>
   </a>
   <div class="media-body">
     <h4 class="media-heading">Domination and Independence</h4>
-In the mathematical chess problem of domination, you are tasked with finding an arrangement of several pieces of the same type so that every square on the board is reachable in a single move by at least one of the pieces. For example, what arrangement of knights will ensure that every square is on the path of at least one knight? In the problem of independence, your goal is to place the maximum number of pieces of the same type so that none of the pieces lie in the path of another. For example, can you place eight queens on a standard 8x8 board so that none of the queens is in another's path? You can combine both questions to ask: what is the minimal independent set of a given piece that dominates a board of a given size? 
+In the mathematical chess problem of <b>domination</b>, 
+you are tasked with finding an arrangement of several pieces 
+of the same type so that every square on the board is reachable in a 
+single move by at least one of the pieces. 
+In the problem of <b>independence</b>, your goal is to place the maximum 
+number of pieces of the same type so that none of the pieces lie in the 
+path of another. For example, try to find: 
+<ul>
+<li> a smallest arrangement of knights that dominate each board size;</li>
+<li> a way to place 5 queens on a 5x5 board, and a way to place 8 queens on an 8x8 board.</li>
+</ul> 
 </div>
 </div>
 <br>

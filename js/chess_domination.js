@@ -108,10 +108,12 @@ class Domination {
 		}	
 		if (this.isInSet(i, j, this.pieces)) {
 			this.remove(i,j);
+			targetCell.decoration = "";
 			parentTarget.innerHTML = emptyCell(i,j);	
 		} else {
+			targetCell.decoration = gameType.type;
 			this.pieces.push(targetCell);
-			parentTarget.innerHTML = gameGlyph(i,j);
+			parentTarget.innerHTML = gameGlyph(i,j, targetCell.decoration);
 		}
 		this.colourCells();
 		gameDisplay.map = svgMap(this.pieces, this.cover, this.board.size);
@@ -126,7 +128,7 @@ function scoreDisplay(pieces, domination, independence) {
 	console.log("domination score: " + domination);
 	console.log("independence score: " + independence);		
 	var html = new Bldr("h4").att("align","center");
-	html.text("" + pieces + " " + gameType.type +"s have been placed.")
+	html.text("" + pieces + " pieces have been placed.")
 	html.elem(new Bldr("br"));
 	if (domination == 0) {
 		html.text("Board is dominated.");
