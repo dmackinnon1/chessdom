@@ -50,7 +50,19 @@ function refresh() {
 	game = new Domination(gameBoard);
 	console.log('board size is now ' + size);
 	$("#boardDisplay").html(htmlForBoard(game.getBoard()));
+	setButtons();
 	game.startGame();
+}
+
+function setButtons() {
+	$(".btn-primary").addClass("btn-secondary");
+	$(".btn-primary").removeClass("btn-primary");
+
+	$("#" + gameType.type).removeClass("btn-secondary");	
+	$("#" + gameType.type).addClass("btn-primary");
+	$("#b" + size +"x" + size).removeClass("btn-secondary");	
+	$("#b" + size +"x" + size).addClass("btn-primary");
+	
 }
 
 $(document).ready(function(){
