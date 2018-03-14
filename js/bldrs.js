@@ -1,14 +1,51 @@
 /**
 * Builders to be used for HTML construction.
-*
+* ------------------------------------------
+* This version of bldrs.js takes things in a little different direction.
+* The builder is intended to be kept alive and updated dynamically. 
+* Every time you need to represent the builder, you call the .build() method.
 */
 
 class Bldr {
 
-	constructor(name) {
+	constructor(name, id) {
+		this.id = id;
 		this.name = name;
 		this.attributes = [];
 		this.elements = [];
+	}
+
+	//for now, we do not make this recursive - just the top level builder is searched
+	find(id) {
+		for (var i = 0; this.elements.length; i ++) {
+			var elem = this.elements[i];
+			if (elem.id == id) return elem;
+		}
+		return null;
+	}
+
+	remove(id) {
+		var pop = null;
+		var reduced = [];
+		for (var i = 0; this.elements.length; i ++) {
+			var elem = this.elements[i];
+			if (elem.id != id) {
+				reduced.push(elem);
+			} else {
+				pop = elem;
+			}
+		}
+		this.elements = reduced;
+		return pop;
+	}
+
+	findAll(name){
+		var named = [];
+		for (var i = 0; this.elements.length; i ++) {
+			var elem = this.elements[i];
+			if (elem.name == name) named.push(elem);
+		}
+		return named;
 	}
 
 	att(name, value) {
