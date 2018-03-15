@@ -37,7 +37,7 @@ def jarr(items):
     return result
 
 def bigjarr(jsons):
-    result = "[" 
+    result = "[\n" 
     first = True
     for js in jsons:
         if not first:
@@ -68,7 +68,12 @@ puzzles = []
 puzzles.append(puzzle("5 queens on 5x5", 5, "true", "true", [piece("queen",5)]))
 puzzles.append(puzzle("5 queens on 8x8", 8, "true", "true", [piece("queen",5)]))
 puzzles.append(puzzle("5 knights on 5x5", 5, "true", "true", [piece("knight",5)]))
-puzzles.append(puzzle("12 knights on 8x8", 5, "true", "false", [piece("knight",8)]))
+puzzles.append(puzzle("12 knights on 8x8", 8, "true", "false", [piece("knight",12)]))
+puzzles.append(puzzle("12 knights on 5x5", 5, "true", "true", [piece("knight",12)]))
+puzzles.append(puzzle("14 bishops on 8x8", 8, "true", "true", [piece("bishop",14)]))
+puzzles.append(puzzle("8 bishops on 5x5", 5, "true", "true", [piece("bishop",8)]))
+puzzles.append(puzzle("9 kings on 5x5", 5, "true", "true", [piece("king",9)]))
+puzzles.append(puzzle("9 kings on 8x8", 8, "true", "true", [piece("king",9)]))
 
 
 # 4. printing puzzle file
