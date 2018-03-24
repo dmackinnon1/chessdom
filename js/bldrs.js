@@ -5,7 +5,7 @@
 * The builder is intended to be kept alive and updated dynamically. 
 * Every time you need to represent the builder, you call the .build() method.
 */
-
+'use strict';
 class Bldr {
 
 	constructor(name, id) {
@@ -17,18 +17,18 @@ class Bldr {
 
 	//for now, we do not make this recursive - just the top level builder is searched
 	find(id) {
-		for (var i = 0; this.elements.length; i ++) {
-			var elem = this.elements[i];
+		for (let i = 0; this.elements.length; i ++) {
+			let elem = this.elements[i];
 			if (elem.id == id) return elem;
 		}
 		return null;
 	}
 
 	remove(id) {
-		var pop = null;
-		var reduced = [];
-		for (var i = 0; this.elements.length; i ++) {
-			var elem = this.elements[i];
+		let pop = null;
+		let reduced = [];
+		for (let i = 0; this.elements.length; i ++) {
+			let elem = this.elements[i];
 			if (elem.id != id) {
 				reduced.push(elem);
 			} else {
@@ -40,16 +40,16 @@ class Bldr {
 	}
 
 	findAll(name){
-		var named = [];
-		for (var i = 0; this.elements.length; i ++) {
-			var elem = this.elements[i];
+		let named = [];
+		for (let i = 0; this.elements.length; i ++) {
+			let elem = this.elements[i];
 			if (elem.name == name) named.push(elem);
 		}
 		return named;
 	}
 
 	att(name, value) {
-		var att = new Attribute(name, value);
+		let att = new Attribute(name, value);
 		this.attributes.push(att);
 		return this;
 	}
@@ -65,12 +65,12 @@ class Bldr {
 	}
 
 	build() {
-		var s = "<" + this.name;
-		for(var i = 0; i< this.attributes.length; i++) {
+		let s = "<" + this.name;
+		for(let i = 0; i< this.attributes.length; i++) {
 			s += " " + this.attributes[i].toString();
 		}
 		s += ">";
-		for(var i = 0; i< this.elements.length; i++) {
+		for(let i = 0; i< this.elements.length; i++) {
 			s += " " + this.elements[i].build();
 		}
 		s += "</" + this.name + ">";
@@ -85,7 +85,7 @@ class Attribute {
 	}
 
 	toString() {
-		var s = "" + this.name + "='" + this.value + "'";
+		let s = "" + this.name + "='" + this.value + "'";
 		return s;
 	}
 };
