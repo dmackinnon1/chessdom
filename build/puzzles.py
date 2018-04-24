@@ -65,58 +65,98 @@ def puzzle(name, size, cover, unguard, pieces):
  
 # 3. defining specific puzzles
 puzzles = []
-#queens domination
+#queens 
 puzzles.append(puzzle("2 queens on 4x4",4, "true", "false", [piece("queen",2)]))
-puzzles.append(puzzle("3 queens on 5x5", 5, "true", "false", [piece("queen",3)]))
-puzzles.append(puzzle("3 queens on 6x6", 6, "true", "false", [piece("queen",3)]))
-puzzles.append(puzzle("4 queens on 5x5", 5, "true", "true", [piece("queen",4)]))
-puzzles.append(puzzle("4 queens on 7x7", 7, "true", "true", [piece("queen",4)]))
-puzzles.append(puzzle("5 queens on 8x8", 8, "true", "true", [piece("queen",5)]))
-
-#queens independence
+puzzles.append(puzzle("3 queens on 4x4",4, "true", "true", [piece("queen",3)]))
 puzzles.append(puzzle("4 queens on 4x4", 4, "true", "true", [piece("queen",4)]))
+
+puzzles.append(puzzle("3 queens on 5x5", 5, "true", "false", [piece("queen",3)]))
+puzzles.append(puzzle("4 queens on 5x5", 5, "true", "true", [piece("queen",4)]))
 puzzles.append(puzzle("5 queens on 5x5", 5, "true", "true", [piece("queen",5)]))
+
+puzzles.append(puzzle("3 queens on 6x6", 6, "true", "false", [piece("queen",3)]))
+puzzles.append(puzzle("4 queens on 6x6", 6, "true", "false", [piece("queen",4)]))
+puzzles.append(puzzle("5 queens on 6x6", 6, "true", "true", [piece("queen",5)]))
 puzzles.append(puzzle("6 queens on 6x6", 6, "true", "true", [piece("queen",6)]))
+
+
+puzzles.append(puzzle("4 queens on 7x7", 7, "true", "true", [piece("queen",4)]))
+puzzles.append(puzzle("5 queens on 7x7", 7, "true", "true", [piece("queen",5)]))
+puzzles.append(puzzle("6 queens on 7x7", 7, "true", "true", [piece("queen",6)]))
 puzzles.append(puzzle("7 queens on 7x7", 7, "true", "true", [piece("queen",7)]))
+
+puzzles.append(puzzle("5 queens on 8x8", 8, "true", "true", [piece("queen",5)]))
+puzzles.append(puzzle("6 queens on 8x8", 8, "true", "true", [piece("queen",6)]))
+puzzles.append(puzzle("7 queens on 8x8", 8, "true", "true", [piece("queen",7)]))
 puzzles.append(puzzle("8 queens on 8x8", 8, "true", "true", [piece("queen",8)]))
 
-#knight domination
-puzzles.append(puzzle("4 knights on 4x4", 4, "true", "true", [piece("knight",4)]))
-puzzles.append(puzzle("8 knights on 6x6", 4, "true", "true", [piece("knight",8)]))
-puzzles.append(puzzle("10 knights on 7x7", 7, "true", "false", [piece("knight",10)]))
-puzzles.append(puzzle("12 knights on 8x8", 8, "true", "false", [piece("knight",12)]))
-
-#knight independence
+#knights
 puzzles.append(puzzle("5 knights on 3x3", 3, "true", "true", [piece("knight",5)]))
+
+puzzles.append(puzzle("4 knights on 4x4", 4, "true", "true", [piece("knight",4)]))
+puzzles.append(puzzle("5 knights on 4x4", 4, "true", "true", [piece("knight",5)]))
 puzzles.append(puzzle("8 knights on 4x4", 4, "true", "true", [piece("knight",8)]))
+
 puzzles.append(puzzle("5 knights on 5x5", 5, "true", "true", [piece("knight",5)]))
+puzzles.append(puzzle("8 knights on 5x5", 5, "true", "true", [piece("knight",8)]))
+puzzles.append(puzzle("9 knights on 5x5", 5, "true", "true", [piece("knight",9)]))
+puzzles.append(puzzle("10 knights on 5x5", 5, "true", "true", [piece("knight",10)]))
+puzzles.append(puzzle("11 knights on 5x5", 5, "true", "true", [piece("knight",11)]))
 puzzles.append(puzzle("12 knights on 5x5", 5, "true", "true", [piece("knight",12)]))
 puzzles.append(puzzle("13 knights on 5x5", 5, "true", "true", [piece("knight",13)]))
+
+puzzles.append(puzzle("8 knights on 6x6", 6, "true", "true", [piece("knight",8)]))
+puzzles.append(puzzle("11 knights on 6x6", 6, "true", "true", [piece("knight",11)]))
+puzzles.append(puzzle("12 knights on 6x6", 6, "true", "true", [piece("knight",12)]))
+puzzles.append(puzzle("14 knights on 6x6", 6, "true", "true", [piece("knight",14)]))
 puzzles.append(puzzle("18 knights on 6x6", 6, "true", "true", [piece("knight",18)]))
+
+puzzles.append(puzzle("10 knights on 7x7", 7, "true", "false", [piece("knight",10)]))
+puzzles.append(puzzle("14 knights on 7x7", 7, "true", "true", [piece("knight",14)]))
+puzzles.append(puzzle("17 knights on 7x7", 7, "true", "true", [piece("knight",17)]))
+puzzles.append(puzzle("24 knights on 7x7", 7, "true", "true", [piece("knight",24)]))
 puzzles.append(puzzle("25 knights on 7x7", 7, "true", "true", [piece("knight",25)]))
 
-#rook domination
+puzzles.append(puzzle("12 knights on 8x8", 8, "true", "false", [piece("knight",12)]))
+puzzles.append(puzzle("16 knights on 8x8", 8, "true", "false", [piece("knight",16)]))
+puzzles.append(puzzle("32 knights on 8x8", 8, "true", "false", [piece("knight",32)]))
+
+
+#rook 
 puzzles.append(puzzle("4 rooks on 4x4", 4, "true", "true", [piece("rook",4)]))
 puzzles.append(puzzle("5 rooks on 5x5", 5, "true", "true", [piece("rook",5)]))
 puzzles.append(puzzle("6 rooks on 6x6", 6, "true", "true", [piece("rook",6)]))
 
-#bishop independence
-puzzles.append(puzzle("14 bishops on 8x8", 8, "true", "true", [piece("bishop",14)]))
-puzzles.append(puzzle("12 bishops on 7x7", 7, "true", "true", [piece("bishop",12)]))
-puzzles.append(puzzle("8 bishops on 5x5", 5, "true", "true", [piece("bishop",8)]))
+#bishop 
+puzzles.append(puzzle("4 bishops on 4x4", 4, "true", "true", [piece("bishop",4)]))
+puzzles.append(puzzle("5 bishops on 4x4", 4, "true", "true", [piece("bishop",5)]))
 puzzles.append(puzzle("6 bishops on 4x4", 4, "true", "true", [piece("bishop",6)]))
+
+puzzles.append(puzzle("5 bishops on 5x5", 5, "true", "true", [piece("bishop",5)]))
 puzzles.append(puzzle("6 bishops on 5x5", 5, "true", "true", [piece("bishop",6)]))
+puzzles.append(puzzle("7 bishops on 5x5", 5, "true", "true", [piece("bishop",7)]))
+puzzles.append(puzzle("8 bishops on 5x5", 5, "true", "true", [piece("bishop",8)]))
+
+puzzles.append(puzzle("7 bishops on 7x7", 7, "true", "true", [piece("bishop",7)]))
+puzzles.append(puzzle("8 bishops on 7x7", 7, "true", "true", [piece("bishop",8)]))
+puzzles.append(puzzle("9 bishops on 7x7", 7, "true", "true", [piece("bishop",9)]))
 puzzles.append(puzzle("10 bishops on 7x7", 7, "true", "true", [piece("bishop",10)]))
+puzzles.append(puzzle("11 bishops on 7x7", 7, "true", "true", [piece("bishop",11)]))
+puzzles.append(puzzle("12 bishops on 7x7", 7, "true", "true", [piece("bishop",12)]))
+
+puzzles.append(puzzle("8 bishops on 8x8", 8, "true", "true", [piece("bishop",8)]))
 puzzles.append(puzzle("10 bishops on 8x8", 8, "true", "true", [piece("bishop",10)]))
+puzzles.append(puzzle("14 bishops on 8x8", 8, "true", "true", [piece("bishop",14)]))
 
-#king domination
+#king 
 puzzles.append(puzzle("4 kings on 5x5", 5, "true", "true", [piece("king",4)]))
-puzzles.append(puzzle("4 kings on 6x6", 6, "true", "true", [piece("king",4)]))
-
-#king independence
 puzzles.append(puzzle("9 kings on 5x5", 5, "true", "true", [piece("king",9)]))
+
+puzzles.append(puzzle("4 kings on 6x6", 6, "true", "true", [piece("king",4)]))
 puzzles.append(puzzle("9 kings on 6x6", 6, "true", "true", [piece("king",9)]))
+
 puzzles.append(puzzle("9 kings on 7x7", 7, "true", "true", [piece("king",9)]))
+
 puzzles.append(puzzle("9 kings on 8x8", 8, "true", "true", [piece("king",9)]))
 
 
