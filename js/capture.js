@@ -10,6 +10,13 @@ class CapturePuzzle {
 		this.message = "Choose a piece";
     }
 
+	clone(){
+		let clone = new CapturePuzzle(this.board);
+		clone.moves = this.moves;
+		clone.pieces = structuredClone(this.pieces);
+		return clone;
+	}
+
 	resetPieceCounts(){
 		for (let index = 0; index < this.pieces.length; index++) {
 			this.pieces[index].count = 0;
@@ -231,6 +238,53 @@ class CapturePiece {
         let this_col = this.cell.colNum;
         let other_row = cell.rowNum;
         let other_col =  cell.colNum;
+        if (this_row < other_row){ //other is ahead in row
+            if (this_col < other_col){ //other is ahead in column
+                for (let i = this_row + 1; i < other_row; i++) {
+                    for (let j = this_col +1; j < other_col; j++) {
+                        let space = this.board.cells[i][j];
+                        if (space.decoration != "") {
+                            console.log("-- found " + space.decoration + " in path");
+                            return false;
+                        }
+                    }
+                }
+            } else { //other is behind on column
+                for (let i = this_row + 1; i < other_row; i++) {
+                    for (let j = this_col -1; j > other_col; j--) {
+                        let space = this.board.cells[i][j];
+                        if (space.decoration != "") {
+                            console.log("-- found " + space.decoration + " in path");
+                            return false;
+                        }
+                    }
+                }
+            }
+        } else {
+            if (this_col < other_col){ //other is ahead in column
+                for (let i = this_row - 1; i > other_row; i--) {
+                    for (let j = this_col +1; j < other_col; j++) {
+                        let space = this.board.cells[i][j];
+                        if (space.decoration != "") {
+                            console.log("-- found " + space.decoration + " in path");
+                            return false;
+                        }
+                    }
+                }
+            } else { //other is behind on column
+                for (let i = this_row - 1; i > other_row; i--) {
+                    for (let j = this_col -1; j > other_col; j--) {
+                        let space = this.board.cells[i][j];
+                        if (space.decoration != "") {
+                            console.log("-- found " + space.decoration + " in path");
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+        /**
         let rr = this_row - other_row;
         let cc = this_col - other_col;
         let minRow = Math.min(this_row, other_row);
@@ -263,6 +317,7 @@ class CapturePiece {
         }
         console.log("-- found nothing in bishop path");
         return true;
+         **/
     }
     cellIsReachableRook(cell){
         let this_row = this.cell.rowNum;
@@ -276,7 +331,7 @@ class CapturePiece {
         let maxCol = Math.max(this_col, other_col);
 
         if (this_row == other_row){
-            for (let i = minCol + 1; i < maxCol - 1; i++) {
+            for (let i = minCol + 1; i < maxCol; i++) {
                let space = this.board.cells[this_row][i];
                if (space.decoration !=""){
                    console.log("-- found " + space.decoration + " in path");
@@ -284,7 +339,7 @@ class CapturePiece {
                }
             }
         } else if (this_col == other_col){
-            for (let i = minRow + 1; i < maxRow - 1; i++) {
+            for (let i = minRow + 1; i < maxRow; i++) {
                 let space = this.board.cells[i][this_col];
                 if (space.decoration !=""){
                     console.log("-- found " + space.decoration + " in path");
