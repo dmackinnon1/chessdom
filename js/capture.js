@@ -87,31 +87,16 @@ class CapturePuzzle {
 		const paralized = this.pieces.filter((p) => (p.count == 2) && (p.inNeighbors().length == 0));
 		const twoMovers = this.pieces.filter((p) => p.count ==0);
 		
-		if (zeroMoves.length > (totalMoves + 1)){
-			isStuck = true;
-			stuckReasons.push("not enough moves left");
-		 }
 
 		if (this.includeKing){
 			if ((king.count ==2) && (this.pieces.length > 1)){
 				isStuck = true;
 				stuckReasons.push("king is out of moves");
 			}
-		}
-
-		if (totalMoves < this.pieces.length -1){
-			isStuck = true;
-			stuckReasons.push("not enough moves left to capture pieces");
-		}
-
-		if (isolated.length != 0 && twoMovers.length == 0){
-			isStuck = true;
-			stuckReasons.push("there is an isolated piece");
-		}
-
-		if (paralized.length != 0 && twoMovers.length == 0){
-			isStuck = true;
-			stuckReasons.push("there is a piece with no moves that can't be captured");
+			if (king.outNeighbors().length == 0){
+				isStuck = true;
+				stuckReasons.push("king cannot capture");
+			}
 		}
 
 		if (this.pieces.length == 2 && king == null){
@@ -123,16 +108,29 @@ class CapturePuzzle {
 			}
 		}
 		
-		if(king != null){
-			if (king.outNeighbors().length == 0){
-				isStuck = true;
-				stuckReasons.push("king cannot capture");
-			}
+		if (totalMoves < this.pieces.length -1){
+			isStuck = true;
+			stuckReasons.push("not enough moves left to capture pieces");
 		}
+
+		if (hasMoves.length == 0){
+			isStuck = true;
+			stuckReasons.push("all pieces are out of moves");
+		} else {
+			if (paralized.length != 0 && twoMovers.length == 0){
+				isStuck = true;
+				stuckReasons.push("there is a piece with no moves that can't be captured");
+			}
+		}	
 
 		if (isolated.length == totalPieces){
 			isStuck = true;
 			stuckReasons.push("all pieces are isolated");
+		} else {
+			if (isolated.length != 0 && twoMovers.length == 0){
+				isStuck = true;
+				stuckReasons.push("there is an isolated piece");
+			}
 		}
 
 		if(isStuck){
