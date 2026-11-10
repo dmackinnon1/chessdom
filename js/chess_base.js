@@ -232,6 +232,16 @@ class Cell {
 		return list;
 	}
 
+	neumannNeighbors(){
+		var list = [];
+		if(this.north() != null) list.push(this.north());
+		if(this.south() != null) list.push(this.south());
+		if(this.east() != null) list.push(this.east());
+		if(this.west() != null) list.push(this.west());
+		return list;
+	}
+
+
 	
 	isNeighbor(cell) {
 		let nbrs = this.neighbors();
