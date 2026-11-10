@@ -1,0 +1,550 @@
+'use strict';
+
+class AvoidancePuzzle {
+    constructor(board) {
+        this.board = board;
+        this.moves = [];
+        this.pieces=[];
+        this.selected = null;
+        this.target = null;
+		this.message = "Choose a piece.";
+		this.includeKing = true;
+		this.moveStack = [];
+    }
+
+	clone(){
+		let clone = new AvoidancePuzzle(this.board);
+		clone.moves = this.moves;
+		clone.pieces = structuredClone(this.pieces);
+		return clone;
+	}
+
+	resetPieceCounts(){
+		for (let index = 0; index < this.pieces.length; index++) {
+			this.pieces[index].count = 0;
+		}
+	}
+    addPiece(piece) {
+		piece.puzzle = this;
+        this.pieces.push(piece);
+    }
+    piecesWithMovesAndSpace(){
+        return this.pieces.filter(piece => piece.canMoveAndHasSpace());
+    }
+	capture(source, target){
+		this.pieces = this.pieces.filter(p => p !== target);
+		let div = getDiv(source.cell.rowNum, source.cell.colNum);
+		div.html(emptyCell(source.cell.rowNum,source.cell.colNum));
+        source.cell.decoration = "";
+        target.cell.decoration = "";
+		let ogCell = source.cell;
+		source.setCell(target.cell);
+		source.count++;
+		console.log(source.type + " count: " + source.count);
+		this.selected = null;
+		this.moveStack.push(new PuzzleMove(this, source, target,ogCell))
+	}
+
+	canUndo(){
+		return this.moveStack.length !=0 && !this.checkForSolved();
+	}
+	undoLastMove(){
+		if (!this.canUndo()){
+			return;
+		}
+		let move = this.moveStack.pop();
+		move.reverseMove();
+		this.colourCells();
+		this.message = "Choose a piece";
+		this.selected = null;
+		this.colourCells();
+		evnts.fireEvent("refreshMessage");
+	}
+
+    getCell(i, j) {
+		return this.board.cells[i][j];
+	}
+    clicked(i,j, target){
+        console.log("received click event: " + i +"," +j+ ": "+ target);
+        let cell = this.getCell(i,j);
+		this.selectCell(cell, target);
+    }
+
+	checkForSolved(){
+		return this.pieces.length == 1;
+	}
+
+	checkForStuck(){
+		let isStuck = false;
+		let stuckReasons = [];
+		let stuckMessage = "You may be stuck";
+		const hasMoves =  this.pieces.filter((p) => p.count < 2);
+		const zeroMoves = this.pieces.filter((p) => p.count == 2);
+		const totalMoves = this.pieces.reduce((sum, p) => sum + (2 - p.count), 0);
+		const totalPieces = this.pieces.length;
+		const king = this.pieces.filter((p) => p.type == 'king')[0];
+		const isolated = this.pieces.filter((p) => (p.inNeighbors().length == 0) && (p.outNeighbors().length == 0));
+		const paralized = this.pieces.filter((p) => (p.count == 2) && (p.inNeighbors().length == 0));
+		const twoMovers = this.pieces.filter((p) => p.count ==0);
+		
+
+		if (this.includeKing){
+			if ((king.count ==2) && (this.pieces.length > 1)){
+				isStuck = true;
+				stuckReasons.push("king is out of moves");
+			}
+			if (king.outNeighbors().length == 0){
+				isStuck = true;
+				stuckReasons.push("king cannot capture");
+			}
+		}
+
+		if (this.pieces.length == 2 && king == null){
+			const p1 = this.pieces[0];
+			const p2 = this.pieces[1];
+			if ((!p1.pieceIsReachable(p2)) && (!p2.cellIsReachable(p1))){
+				isStuck = true;
+				stuckReasons.push("no final move available");
+			}
+		}
+		
+		if (totalMoves < this.pieces.length -1){
+			isStuck = true;
+			stuckReasons.push("not enough moves left to capture pieces");
+		}
+
+		if (hasMoves.length == 0){
+			isStuck = true;
+			stuckReasons.push("all pieces are out of moves");
+		} else {
+			if (paralized.length != 0 && twoMovers.length == 0){
+				isStuck = true;
+				stuckReasons.push("there is a piece with no moves that can't be captured");
+			}
+		}	
+
+		if (isolated.length == totalPieces){
+			isStuck = true;
+			stuckReasons.push("all pieces are isolated");
+		} else {
+			if (isolated.length != 0 && twoMovers.length == 0){
+				isStuck = true;
+				stuckReasons.push("there is an isolated piece");
+			}
+		}
+
+		if(isStuck){
+			if (stuckReasons.length == 1){
+				stuckMessage += ": " + stuckReasons[0];	
+			} else {	
+				for (let i=0; i < stuckReasons.length; i++){
+					if (i == 0){
+						stuckMessage += ": " + stuckReasons[i];	
+					} else {
+						if (i == stuckReasons.length -1){
+							stuckMessage += " and " + stuckReasons[i];	
+						} else {
+							stuckMessage += ", " + stuckReasons[i];	
+						}
+					}
+				}
+			}
+			this.message = stuckMessage +".";
+		}
+	}
+
+    selectCell(cell, target) {
+		let i = parseInt(target.getAttribute("data-row"));
+		let j = parseInt(target.getAttribute("data-col"));
+		let targetCell = this.board.cells[i][j];
+        console.log("clicked on: " + targetCell.decoration);
+        console.log("clicked on: " + this.getAvoidancePiece(i,j));
+
+		let clickedOn =this.getAvoidancePiece(i,j);
+		if (this.selected == null && clickedOn!=null){
+			this.selected = clickedOn;
+            if (this.selected.remainingMoves() === 1){
+                this.message = "You selected a " + clickedOn.type + " with only one move left.";
+            } else {
+                this.message = "You selected a " + clickedOn.type + " with " + this.selected.remainingMoves() + " moves left.";
+            }
+        } else if (this.selected == clickedOn){
+			console.log("double clicked on same");
+		} else if(clickedOn == null) {
+			console.log("clicked on empty");
+			this.selected = null;
+			this.message = "No piece is slelected, please choose a piece.";
+		} else if(this.selected.pieceIsReachable(clickedOn)) {
+			console.log(this.selected.type +" can capture " + clickedOn.type);
+			if (this.selected.remainingMoves() == 0) {
+                this.message = "No moves left for this piece.";
+                this.selected = null;
+            } else if (clickedOn.type == "king"){
+				this.message = "You cannot capture the king.";
+				this.selected = null;
+			} else {
+				this.message = "The " + this.selected.type + " captures the " + clickedOn.type +".";
+				this.capture(this.selected,clickedOn);
+			}
+		} else{ 
+			this.message = "This " + clickedOn.type + " is not reachable by selected " + this.selected.type;
+			this.selected = null;
+		}
+
+		if(this.checkForSolved()){
+			this.message = "You solved the puzzle!";
+		} else {
+			this.checkForStuck();
+		}
+		this.colourCells();
+		evnts.fireEvent("refreshMessage");
+		
+		
+	}
+
+    getAvoidancePiece(i, j) {
+        for (let k = 0; k < this.pieces.length; k++) {
+            if (this.pieces[k].isAt(i,j)) {
+                return this.pieces[k];
+            }
+        }
+        return null;
+    }
+
+    solutionHTML(){
+        let list = this.moves.reverse();
+        let html = "<ol>\n";
+        for(let i = 0; i < list.length; i++) {
+            html += "<li>" + list[i] +"</li>\n";
+        }
+        html += "</ol>\n";
+        return html;
+    }
+
+	messageHTML(){
+		return this.message;
+	}
+
+    randomAvailablePiece(){
+        let available = this.piecesWithMovesAndSpace();
+        return available[Math.floor(Math.random() * available.length)];
+    }
+
+    colourCells() {
+        for (let i = 0; i < this.board.rowNum; i++) {
+            for (let j = 0; j < this.board.colNum; j++) {
+                let div = getDiv(i, j);
+                div.attr("style", "color:black");
+                var cell = this.board.cells[i][j];
+                if (cell.decoration !=""){
+                    div.html(gameGlyph(i,j, cell.decoration));
+                    //div.css("background","#99ff99");
+                }
+
+            }
+        }
+
+        if (this.selected != null){
+            let si = this.selected.cell.rowNum;
+            let sj= this.selected.cell.colNum;
+            let sdiv = getDiv(si, sj);
+            if (this.selected.remainingMoves() == 0) {
+                sdiv.css("background","rgb(128,128,128,1)");
+            } else if (this.selected.remainingMoves() == 1) {
+                sdiv.css("background","rgb(128,128,128,0.5)");
+            }else if(this.selected.remainingMoves() == 2){
+                sdiv.css("background","rgb(128,128,128,0.2)");
+            }
+
+
+			let nbs = this.selected.neighbors();
+            for (let l = 0; l < nbs.length; l++){
+                let nbCell = nbs[l];
+                let i = nbCell.rowNum;
+                let j = nbCell.colNum;
+                if (this.selected.cellIsReachable(nbCell)&&nbCell.decoration!==""){
+                    let div = getDiv(i, j);
+                    div.css("background","#99ff99");
+                }
+            }
+        }
+    }
+}
+
+class AvoidancePiece {
+    constructor(board) {
+        this.board = board;
+        this.count = 0;
+        this.type = "knight";
+        this.cell = null;
+		this.puzzle = null;
+    }
+
+    remainingMoves(){
+        return 2 - this.count;
+    }
+
+	toString(){
+		let str = "" +this.type + " at " + this.cell;
+		return str;
+	}
+
+    isAt(i,j){
+        return this.cell.rowNum==i && this.cell.colNum==j;
+    }
+
+    setCell(cell) {
+        this.cell = cell;
+        this.cell.decoration = this.type;
+    }
+    getCell(){
+        return this.cell;
+    }
+    moveTo(target){
+        this.cell.decoration="";
+        this.count ++;
+        this.setCell(target);
+    }
+    canMove(){
+        return this.count < 2;
+    }
+
+    canMoveAndHasSpace(){
+        return this.canMove() && this.hasEmptyNeighbors();
+    }
+
+	inNeighbors(){
+		return this.puzzle.pieces.filter(p => p.pieceIsReachable(this));
+	}
+
+	//piece neighbors
+	outNeighbors(){
+		return this.puzzle.pieces.filter(p => this.pieceIsReachable(p));
+	}
+
+	//cell neighbors
+	neighbors(){
+		return this.cell.neighbors();
+	}
+	
+    getNeighborCell(){
+        let nbs = this.cell.neighbors();
+        let nonEmpties = nbs.filter(n => n.decoration == "");
+        console.log("found occupied neighbours: "+  nbs.filter(n => n.decoration != ""));
+        return nonEmpties[Math.floor(Math.random() * nonEmpties.length)];
+    }
+
+	pieceIsReachable(piece){
+		let targetCell = piece.getCell();
+		return this.cellIsReachable(targetCell);
+	}
+    cellIsReachable(cell){
+        if(!this.cell.neighbors().includes(cell)){
+            return false;
+        }
+        let thetype = this.type;
+        if(thetype==="king" | thetype==="knight"){ return true;}
+        let this_row = this.cell.rowNum;
+        let this_col = this.cell.colNum;
+        let other_row = cell.rowNum;
+        let other_col =  cell.colNum;
+
+        if (this_row == other_row || this_col == other_col){
+            console.log("- use rook positioning");
+            return this.cellIsReachableRook(cell);
+        }
+
+        console.log("- use bishop positioning");
+        return this.cellIsReachableBishop(cell);
+    }
+
+    cellIsReachableBishop(cell){
+        let this_row = this.cell.rowNum;
+        let this_col = this.cell.colNum;
+        let other_row = cell.rowNum;
+        let other_col =  cell.colNum;
+        if (this_row < other_row){ //other is ahead in row
+            if (this_col < other_col){ //other is ahead in column
+                let i = this_row + 1;
+                let j = this_col + 1;
+                while (i < other_row && j < other_col){
+                    let space = this.board.cells[i][j];
+                    if (space.decoration !== "") {
+                        console.log("-- found " + space.decoration + " in path");
+                        return false;
+                    }
+                    i++;
+                    j++;
+                }
+
+            } else { //other is behind on column
+                let i = this_row + 1;
+                let j = this_col - 1;
+                while (i < other_row && j > other_col){
+                    let space = this.board.cells[i][j];
+                    if (space.decoration !== "") {
+                        console.log("-- found " + space.decoration + " in path");
+                        return false;
+                    }
+                    i++;
+                    j--;
+                }
+            }
+        } else {
+            if (this_col < other_col){ //other is ahead in column
+                let i = this_row - 1;
+                let j = this_col + 1;
+                while (i > other_row && j < other_col){
+                    let space = this.board.cells[i][j];
+                    if (space.decoration !== "") {
+                        console.log("-- found " + space.decoration + " in path");
+                        return false;
+                    }
+                    i--;
+                    j++;
+                }
+
+            } else { //other is behind on column
+                let i = this_row - 1;
+                let j = this_col - 1;
+                while (i > other_row && j > other_col){
+                    let space = this.board.cells[i][j];
+                    if (space.decoration !== "") {
+                        console.log("-- found " + space.decoration + " in path");
+                        return false;
+                    }
+                    i--;
+                    j--;
+                }
+            }
+        }
+        return true;
+    }
+    cellIsReachableRook(cell){
+        let this_row = this.cell.rowNum;
+        let this_col = this.cell.colNum;
+        let other_row = cell.rowNum;
+        let other_col =  cell.colNum;
+
+        let minRow = Math.min(this_row, other_row);
+        let maxRow = Math.max(this_row, other_row);
+        let minCol = Math.min(this_col, other_col);
+        let maxCol = Math.max(this_col, other_col);
+
+        if (this_row == other_row){
+            for (let i = minCol + 1; i < maxCol; i++) {
+               let space = this.board.cells[this_row][i];
+               if (space.decoration !=""){
+                   console.log("-- found " + space.decoration + " in path");
+                   return false;
+               }
+            }
+        } else if (this_col == other_col){
+            for (let i = minRow + 1; i < maxRow; i++) {
+                let space = this.board.cells[i][this_col];
+                if (space.decoration !==""){
+                    console.log("-- found " + space.decoration + " in path");
+                    return false;
+                }
+            }
+        }
+        console.log("-- found nothing in rook path");
+        return true;
+    }
+    hasEmptyNeighbors(){
+        let nbs = this.reachableUnoccupiedNeighbors();
+        return nbs.length > 0;
+    }
+
+    reachableUnoccupiedNeighbors(){
+        return this.cell.neighbors().filter(n => (this.cellIsReachable(n) && n.decoration === ""));
+    }
+
+}
+
+class PuzzleMove{
+	constructor(puzzle, activePiece, targetPiece, startCell){
+		this.puzzle = puzzle;
+		this.activePiece = activePiece;
+		this.targetPiece = targetPiece;
+		this.startCell = startCell;
+	}
+
+	reverseMove(){
+		this.activePiece.count--;
+		this.targetPiece.setCell(this.activePiece.cell);
+		this.activePiece.setCell(this.startCell);
+		this.puzzle.addPiece(this.targetPiece);
+	}
+}
+
+class PuzzleGenerator{
+    constructor(board, kings=true, pieceType='all') {
+        this.board = board;
+		this.includeKing = kings ;
+        this.puzzle = new AvoidancePuzzle(board);
+		this.puzzle.includeKing = this.includeKing;
+		this.pieceType = pieceType;
+		this.puzzle.pieceType = this.pieceType;
+		
+    }
+
+    randomType(){
+		if (this.pieceType == 'all'){
+	        let types = ["knight","bishop","rook","queen"];
+	        return types[Math.floor(Math.random() * types.length)];
+		} else {
+			return this.pieceType;
+		}
+    }
+    initialPosition(){
+        let startposition = this.board.randomStart();
+        let firstpiece = new AvoidancePiece(this.board);
+        if (this.includeKing){
+			firstpiece.type = "king";
+		} else {
+			firstpiece.type = this.randomType();
+		}
+        firstpiece.setCell(startposition);
+        this.puzzle.addPiece(firstpiece);
+    }
+    existingAvoidance(){
+        let op = this.puzzle.randomAvailablePiece();
+        let newPiece = new AvoidancePiece(this.board);
+        newPiece.type = this.randomType();
+        console.log("new piece: " + newPiece.type);
+        this.puzzle.addPiece(newPiece);
+
+        let nbs = op.reachableUnoccupiedNeighbors();
+        console.log("creating puzzle -- selected " + op);
+
+        let ogCell = op.getCell();
+        let newCell = nbs[Math.floor(Math.random() * nbs.length)];
+
+        console.log("new cell is reachable: " + op.cellIsReachable(newCell));
+        op.moveTo(newCell);
+        newPiece.setCell(ogCell);
+        this.puzzle.moves.push("the " + op.type +" at "
+            + newCell.position()  + " takes " + newPiece.type +" at " + ogCell.position() );
+    }
+
+    puzzleOfDepth(depth){
+        this.initialPosition();
+        for(let i=0; i< depth; i++){
+            this.existingAvoidance();
+        }
+        return this.puzzle;
+    }
+
+    //2pieces
+    verySimplePuzzle(){
+        return this.puzzleOfDepth(1);
+    }
+    //3pieces
+    simplePuzzle(){
+        return this.puzzleOfDepth(2);
+    }
+   
+    
+
+}
