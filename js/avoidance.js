@@ -172,17 +172,97 @@ class AvoidancePiece {
 
 }
 
+class PuzzleDescriptorPosition {
+	constructor(i,j){
+		this.row = i;
+		this.col = j;
+	}
+}
+
+class PuzzleDescriptor {
+	constructor(type, description){
+		this.type = type;
+		this.description = description;
+		this.cells = [];
+	}
+
+	addCell(i,j){
+		this.cells.push(new PuzzleDescriptorPosition(i,j));
+	}
+}
+
+let eightKnights = new PuzzleDescriptor("knight","Place eight knights.");
+eightKnights.addCell(0,0);
+eightKnights.addCell(1,1);
+//eightKnights.addCell(2,2);
+//eightKnights.addCell(3,3);
+//eightKnights.addCell(4,4);
+eightKnights.addCell(5,5);
+eightKnights.addCell(6,6);
+eightKnights.addCell(7,7);
+
+// Descriptor -> RegionCalculator -> Puzzle
+
+class AvoidancePuzzle {
+	constructor(board, descriptor){
+		this.board = board;
+		this.descriptor = descriptor;
+		this.regionCalculator = null;
+	}
+
+	init(){
+		let initialSet = [];
+		for (let i = 0; i< this.descriptor.cells.length; i++){
+			let cell = this.descriptor.cells[i];
+			initialSet.push(
+				this.board.cells[cell.row][cell.col]);			
+		}
+
+		console.log(initialSet)
+		this.regionCalculator = new RegionCalculator(this.board, initialSet);
+		this.regionCalculator.calculate();
+	}
+
+	colourCells(){
+		this.regionCalculator.colourCells();
+	}
+}
+	
+	
 class Region {
-	constructor(puzzle, startCell){
-		this.puzzle = puzzle;
+	constructor(board, startCell, exclusion){
+		this.board = board;
 		this.startCell = startCell;
 		this.cells = [];
 		this.cells.push(startCell);
-		this.exclusion = [];
+		this.exclusion = [...exclusion];
 	}
 
+	toString(){
+		return "Region length " + this.cells.length;
+	}
 	candidate(){
-		this.cells.filter
+		let allCandidates = [];
+		for (let i = 0; i< this.cells.length; i++){
+			let nbs = this.cells[i].neumannNeighbors();
+			allCandidates.push(...nbs);			
+		}
+
+		let viableCandidates = []
+		for (let j = 0; j< allCandidates.length; j++){
+				let selected = allCandidates[j];
+				if (!this.cellInCellSet(selected, this.cells) &&
+					!this.cellInCellSet(selected, this.exclusion)){
+						viableCandidates.push(selected);
+					}
+			}
+		if (viableCandidates.length !=0){
+			const randomIndex = Math.floor(Math.random() * viableCandidates.length);
+			return viableCandidates[randomIndex];	
+		} else {
+			return null;
+		}
+
 	}
 
 	addToRegion(cell){
@@ -193,45 +273,9 @@ class Region {
 		this.exclusion.push(cell);
 	}
 
-	
-}
-
-
-class PuzzleGenerator{
-    constructor(board, pieceType='queen') { // initial testing is with queen
-        this.board = board;
-		//this.puzzle = new AvoidancePuzzle(board);
-		this.pieces = [];'
-		this.pieceType = pieceType;
-		this.puzzle.pieceType = this.pieceType;
-		this.cover =[];
-		
-    }
-
-	addPiece(piece) {
-		piece.puzzle = this;
-        this.pieces.push(piece);
-    }
-
-	calculateCover(){
-		this.cover = [];
-		for (let k = 0; k < this.pieces.length; k++)  {
-			let selected = this.pieces[k];
-			let nbs = selected.neighbors();
-			for (let l = 0; l < nbs.length; l++){
-				let nbCell = nbs[l];
-				let i = nbCell.rowNum;
-				let j = nbCell.colNum;
-				if (!this.isInSet(i,j,this.cover)){
-						this.cover.push(nbCell);
-				}
-			}
-		}
-
-	}
-
-
-	isInSet(i,j, set) {
+	cellInCellSet(cell, set) {
+		let i = cell.rowNum;
+		let j = cell.colNum;
 		for (let k=0; k < set.length; k++) {
 			let current = set[k];
 			if (current.rowNum == i && current.colNum == j) return true;
@@ -239,72 +283,111 @@ class PuzzleGenerator{
 		return false;
 	}
 
-	independenceScore() {
-		let score = 0;
-		for(let k=0; k <this.pieces.length; k++) {
-			let cell = this.pieces[k];
-			if (this.isInSet(cell.rowNum, cell.colNum, this.cover)) {
-				score ++;
-			}
+	
+}
+
+
+class RegionCalculator{
+    constructor(board, initialSet) { // initial testing is with queen
+        this.board = board;
+		this.initialSet = initialSet;
+		this.regions = [];
+    }
+
+	init(){
+		this.regions = [];
+		for(let i = 0; i < this.initialSet.length; i ++){
+			this.regions.push(new Region(this.board, this.initialSet[i],this.initialSet));
 		}
-		return score;
+	}
+
+	validate(){
+		let total = this.totlalRegionSize();
+		console.log("total regions size: " + total);
+	}
+
+	totlalRegionSize(){
+		let total = 0;
+		for (let i=0; i< this.regions.length; i++){
+			total += this.regions[i].cells.length;
+		}
+		return total;
 	}
 	
-	
-    randomType(){
-		if (this.pieceType == 'all'){
-	        let types = ["knight","bishop","rook","queen"];
-	        return types[Math.floor(Math.random() * types.length)];
-		} else {
-			return this.pieceType;
+	calculateOne(){
+		for (let i = 0; i < this.regions.length; i++){
+			let region = this.regions[i];
+			let candidate = region.candidate();
+			if (candidate != null){
+				region.cells.push(candidate);
+				for (let j = 0; j< this.regions.length; j++){
+					if (i!=j){
+						this.regions[j].exclusion.push(candidate);
+					}
+				}
+			}
 		}
-    }
+	}
+	calculate(){
+		let limit = 64; //hardcoded
+		while (this.totlalRegionSize() < limit){
+			this.calculateOne();	
+		}
+		console.log("finished");
+	}
+
+	colourCells() {
+		let colourList = ["#99FF99", "#D98899", "#7A9EC2", "#E6C88A", "#B39BC8", 
+						 "#C98A70", "#76B5AE", "#A8A29E"];
 	
-    initialPosition(){
-        let startposition = this.board.randomStart();
-        let firstpiece = new AvoidancePiece(this.board);
-        
-		firstpiece.type = this.randomType();
+        for (let i = 0; i < this.regions.length; i++) {
+			let cregion = this.regions[i];
+			//console.log("colouring region: " + cregion);
+			for (let j=0; j< cregion.cells.length; j++){
+				let ccell = cregion.cells[j];
+				//console.log("colouring cell:" + ccell);
+				let row = ccell.rowNum;
+				let col = ccell.colNum;
+				let div = getDiv(row, col);
+				console.log(div);
+				let pdiv = div.parent();
+				//div.html(gameGlyph(i,j, ccell.decoration));
+				div.css("background",colourList[i]);
+				pdiv.css("background",colourList[i]);
+				//div.attr("style", "color:" +colourList[i]);
+			}
 		
-        firstpiece.setCell(startposition);
-        this.puzzle.addPiece(firstpiece);
-    }
-    
-	existingAvoidance(){
-        let op = this.puzzle.randomAvailablePiece();
-        let newPiece = new AvoidancePiece(this.board);
-        newPiece.type = this.randomType();
-        console.log("new piece: " + newPiece.type);
-        this.puzzle.addPiece(newPiece);
+		}
+	}
 
-        let nbs = op.reachableUnoccupiedNeighbors();
-        console.log("creating puzzle -- selected " + op);
+	cellInCellSet(cell, set) {
+		let i = cell.rowNum;
+		let j = cell.colNum;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.rowNum == i && current.colNum == j) return true;
+		}
+		return false;
+	}
 
-        let ogCell = op.getCell();
-        let newCell = nbs[Math.floor(Math.random() * nbs.length)];
+	example1(){
+		this.initialSet.push(this.board.cells[0][0]);
+		this.initialSet.push(this.board.cells[1][1]);
+		this.initialSet.push(this.board.cells[2][2]);
+		this.initialSet.push(this.board.cells[3][3]);
+		this.initialSet.push(this.board.cells[4][4]);
+		this.initialSet.push(this.board.cells[5][5]);
+		this.initialSet.push(this.board.cells[6][6]);
+		this.initialSet.push(this.board.cells[7][7]);	
+	}
 
-        console.log("new cell is reachable: " + op.cellIsReachable(newCell));
-        op.moveTo(newCell);
-        newPiece.setCell(ogCell);
-        this.puzzle.moves.push("the " + op.type +" at "
-            + newCell.position()  + " takes " + newPiece.type +" at " + ogCell.position() );
-    }
 
-    puzzleOfDepth(depth){
-        this.initialPosition();
-        for(let i=0; i< depth; i++){
-            this.existingAvoidance();
-        }
-        return this.puzzle;
-    }
-
-    //2pieces
-    verySimplePuzzle(){
-        return this.puzzleOfDepth(1);
-    }
-    //3pieces
-    simplePuzzle(){
-        return this.puzzleOfDepth(2);
-    }
-    
+	example2(){
+		this.initialSet.push(this.board.cells[0][0]);
+		this.initialSet.push(this.board.cells[1][1]);
+		this.initialSet.push(this.board.cells[2][2]);
+		this.initialSet.push(this.board.cells[6][6]);
+		this.initialSet.push(this.board.cells[7][7]);	
+	}
+	
 }

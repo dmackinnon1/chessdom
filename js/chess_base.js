@@ -441,6 +441,12 @@ function queenGlyph(i,j){
 	return glyph;	
 };
 
+function blankGlyph(i,j){
+	let glyph = "<span class='glyphicon glyphicon-square-empty' ";
+	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
+	return glyph;	
+};
+
 function gameGlyph(i,j, type) {
 	if (type == "knight"){
 		return knightGlyph(i,j);
@@ -457,4 +463,5 @@ function gameGlyph(i,j, type) {
 	if (type == "queen") {
 		return queenGlyph(i,j);
 	}
+	return blankGlyph(i,j);
 }
