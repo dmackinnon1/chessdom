@@ -189,17 +189,19 @@ class PuzzleDescriptor {
 	addCell(i,j){
 		this.cells.push(new PuzzleDescriptorPosition(i,j));
 	}
-}
 
-let eightKnights = new PuzzleDescriptor("knight","Place eight knights.");
-eightKnights.addCell(0,0);
-eightKnights.addCell(1,1);
-//eightKnights.addCell(2,2);
-//eightKnights.addCell(3,3);
-//eightKnights.addCell(4,4);
-eightKnights.addCell(5,5);
-eightKnights.addCell(6,6);
-eightKnights.addCell(7,7);
+	addDiagonal(){
+		this.addCell(0,0);
+		this.addCell(1,1);
+		this.addCell(2,2);
+		this.addCell(3,3);
+		this.addCell(4,4);
+		this.addCell(5,5);
+		this.addCell(6,6);
+		this.addCell(7,7);
+		
+	}
+}
 
 // Descriptor -> RegionCalculator -> Puzzle
 
@@ -208,10 +210,15 @@ class AvoidancePuzzle {
 		this.board = board;
 		this.descriptor = descriptor;
 		this.regionCalculator = null;
+		this.cover = [];
+		this.pieces = [];
+		this.message = "Not solved yet.";
 	}
 
 	init(){
+		this.message = "Not solved yet.";
 		let initialSet = [];
+		this.removePieces();
 		for (let i = 0; i< this.descriptor.cells.length; i++){
 			let cell = this.descriptor.cells[i];
 			initialSet.push(
@@ -220,11 +227,185 @@ class AvoidancePuzzle {
 
 		console.log(initialSet)
 		this.regionCalculator = new RegionCalculator(this.board, initialSet);
+		this.regionCalculator.init();
 		this.regionCalculator.calculate();
+		evnts.fireEvent("refreshMessage");
 	}
 
+	removePieces(){
+		for(let i=0; i< this.pieces.length; i++){
+			this.pieces[i].getCell().decoration = "";
+		}
+		this.pieces = [];
+	}
+
+	messageHTML(){
+		return this.message;
+	}
+
+	descriptionHTML(){
+		return "Place " + this.regionCalculator.regions.length + " independent " + this.descriptor.type + "s, one in each coloured region of the board.";
+	}
 	colourCells(){
 		this.regionCalculator.colourCells();
+	}
+
+	 getCell(i, j) {
+		return this.board.cells[i][j];
+	}
+    clicked(i,j, target){
+        console.log("received click event: " + i +"," +j+ ": "+ target);
+        let cell = this.getCell(i,j);
+		this.selectCell(cell, target);
+    }
+
+	getRegionID(i,j){
+		let regions = this.regionCalculator.regions;
+		for (let k = 0; k<regions.length; k++){
+			if (regions[k].hasCell(i,j)){
+				return k;
+			}
+		}
+		return -1; //error
+	}
+
+	getRegionByID(id){
+		let regions = this.regionCalculator.regions;
+		return regions[id];
+	}
+	
+	 selectCell(cell, target) {
+
+		if (this.isSolved()) {
+			return;
+		} 
+		 
+		let i = parseInt(target.getAttribute("data-row"));
+		let j = parseInt(target.getAttribute("data-col"));
+		let targetCell = this.board.cells[i][j];
+
+		//1. Get the Region for the cell
+		let regionId =  this.getRegionID(i,j);
+        console.log("clicked on region: " + regionId);
+
+		let region = this.getRegionByID(regionId);
+		console.log("region: " + region)
+		
+		console.log("has existing piece: " + region.hasExistingPiece());
+		//2. If the region has an piece remove it
+		if (region.hasExistingPiece()) {
+			let oldCell = region.getExistingPieceCell();
+			let oldPiece = this.getPiece(oldCell.rowNum, oldCell.colNum);
+			this.pieces = this.pieces.filter(p => p !== oldPiece); 
+			region.removeExistingPieces();
+		}
+		//3. Place a piece in the cell
+		
+		let piece = new AvoidancePiece(this);
+		this.pieces.push(piece);
+		piece.setCell(targetCell);
+		this.colourCells();
+
+		//highlight problems
+		this.calculateCover();
+
+		let newCell = piece.getCell();
+
+		//if(this.cellInCellSet(newCell, this.cover)){
+		//	let div = getDiv(newCell.rowNum, newCell.colNum);
+        //        div.css("color","#FF0000");
+		//}
+		this.checkAllInCover();
+		//4. Check for finished.
+		if (this.isSolved()){
+			this.message = "Solved!";
+		} else {
+			this.message = "Not solved yet. You've placed "+this.pieces.length 
+				+ " of " + this.regionCalculator.regions.length + " pieces. There are " + this.coverCount() + " pieces that can be captured by another piece.";
+		}
+		evnts.fireEvent("refreshMessage");
+		 
+	}
+
+	isSolved(){
+		if (this.pieces.length != this.regionCalculator.regions.length){
+			return false;
+		}
+		if (this.coverCount() != 0){
+			return false;
+		}
+		return true;
+	}
+	
+	colourInCover(p){
+		let div = getDiv(p.getCell().rowNum, p.getCell().colNum);
+        div.css("color","#FF0000");
+	}
+
+	checkAllInCover(){
+		for (let k = 0; k< this.pieces.length; k++){
+			let piece = this.pieces[k];
+			let cell = this.pieces[k].getCell();
+			if (this.cellInCellSet(cell,this.cover)){
+				this.colourInCover(piece);
+				//console.log("found a piece");
+			}
+		}
+	}
+
+	coverCount(){
+		let count = 0;
+		for (let k = 0; k< this.pieces.length; k++){
+			let piece = this.pieces[k];
+			let cell = this.pieces[k].getCell();
+			if (this.cellInCellSet(cell,this.cover)){
+				count ++;
+			}
+		}
+		return count;
+	}
+	
+	calculateCover(){
+		this.cover = [];
+		for (let k = 0; k < this.pieces.length; k++)  {
+			let selected = this.pieces[k];
+			let nbs = selected.neighbors();
+			for (let l = 0; l < nbs.length; l++){
+				let nbCell = nbs[l];
+				let i = nbCell.rowNum;
+				let j = nbCell.colNum;
+				if (!this.cellInCellSet(nbCell,this.cover)){
+						this.cover.push(nbCell);
+						let div = getDiv(i, j);
+						//div.css("color","#99ff99");
+				}
+			}
+		}
+	}
+
+	cellInCellSet(cell, set) {
+		let i = cell.rowNum;
+		let j = cell.colNum;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.rowNum == i && current.colNum == j) return true;
+		}
+		return false;
+	}
+	
+	 getPiece(i, j) {
+        for (let k = 0; k < this.pieces.length; k++) {
+            if (this.pieces[k].isAt(i,j)) {
+                return this.pieces[k];
+            }
+        }
+        return null;
+    }
+
+	checkForSolved(){
+		//1. Check that piece count == region count
+
+		//2. Check that all pieces are not in cover
 	}
 }
 	
@@ -262,7 +443,6 @@ class Region {
 		} else {
 			return null;
 		}
-
 	}
 
 	addToRegion(cell){
@@ -281,6 +461,51 @@ class Region {
 			if (current.rowNum == i && current.colNum == j) return true;
 		}
 		return false;
+	}
+
+	hasCell(i,j){
+		let set = this.cells;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.rowNum == i && current.colNum == j) return true;
+		}
+		return false;
+	}
+
+	hasExistingPiece(){
+		let set = this.cells;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.decoration != "") {
+				console.log("found: " + current.decoration);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	getExistingPieceCell(){
+		let set = this.cells;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.decoration != "") {
+				console.log("found: " + current.decoration);
+				return current;
+			}
+		}
+		return null;
+	}
+
+	
+	removeExistingPieces(){
+		let set = this.cells;
+		for (let k=0; k < set.length; k++) {
+			let current = set[k];
+			if (current.decoration != "") {
+				console.log("found: " + current.decoration +" -- clearing");
+				current.decoration = ""; 
+			}
+		}
 	}
 
 	
@@ -345,18 +570,25 @@ class RegionCalculator{
 			//console.log("colouring region: " + cregion);
 			for (let j=0; j< cregion.cells.length; j++){
 				let ccell = cregion.cells[j];
-				//console.log("colouring cell:" + ccell);
 				let row = ccell.rowNum;
 				let col = ccell.colNum;
 				let div = getDiv(row, col);
-				console.log(div);
 				let pdiv = div.parent();
-				//div.html(gameGlyph(i,j, ccell.decoration));
-				div.css("background",colourList[i]);
-				pdiv.css("background",colourList[i]);
-				//div.attr("style", "color:" +colourList[i]);
+				pdiv.css("background",colourList[i]);		
 			}
-		
+		}
+		for (let i = 0; i < this.board.rowNum; i++) {
+            for (let j = 0; j < this.board.colNum; j++) {
+                let div = getDiv(i, j);
+                div.attr("style", "color:black");
+                var cell = this.board.cells[i][j];
+                if (cell.decoration !=""){
+                    div.html(gameGlyph(i,j, cell.decoration));
+                    //div.css("background","#99ff99");
+                } else{
+					div.html(emptyCell(i,j));
+				}
+            }
 		}
 	}
 

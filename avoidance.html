@@ -41,19 +41,21 @@
 
 <script>
    
-
     let gameBoard = new Board(8);
     gameBoard.init();
-    let calc = new RegionCalculator(gameBoard,[]);
-    calc.example1();
-    calc.init();
+    let descriptor = new PuzzleDescriptor("knight", "eight knights");
+    descriptor.addDiagonal();
+    let puzzle = new AvoidancePuzzle(gameBoard, descriptor);
+    puzzle.init();
+    let game = puzzle;
     
-    function refresh(level = 0){
+    function refresh(){
           console.log("refresh")
-          calc.init();
-          calc.calculate();
-          calc.colourCells();
-          //$("#boardDisplay").html(htmlForBoard(gameBoard)); 
+          $("#boardDisplay").html(htmlForBoard(gameBoard)); 
+          puzzle.init(); 
+          puzzle.colourCells();  
+         
+          
     }
 
     function setButtons() {
@@ -66,21 +68,21 @@
         $(".nav-button-primary").addClass("btn-primary");
     }
 
-    function setLevel() {
-       // $("#levelDisplay").html("<h4>Puzzle " + (depth+1) + " of " + levels.length + ": " +(levels[depth] + 1) + " pieces." + "</h4>");
-
-    }
-
+   
     $(document).ready(function(){
 
         $("#advanceButton").on("click", function(event){
             refresh();
         });
         
-    
-        $("#boardDisplay").html(htmlForBoard(gameBoard)); 
         refresh();
     });
+
+     evnts.addCallback("refreshMessage", function () {
+            $("#messageDisplay").html(puzzle.messageHTML());
+            $("#puzzleDescription").html("<h4>" + puzzle.descriptionHTML() +"</h4>");
+        });
+
 
 
 </script>
@@ -151,9 +153,9 @@
 </div>
 </form>
 -->
-            <!-- hr>
-            <div id="puzzleDescription" style="text-align=center"></div>
             <hr>
+            <div id="puzzleDescription" style="text-align=center"></div>
+            <!--
             <h4><div id="puzzleStatus" style="text-align=center"></div></h4>
             -->
             <hr>
