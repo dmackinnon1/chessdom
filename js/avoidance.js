@@ -4,12 +4,9 @@
 class AvoidancePiece {
     constructor(board) {
         this.board = board;
-        this.type = "knight";
         this.cell = null;
 		this.puzzle = null;
     }
-
-
 
     isAt(i,j){
         return this.cell.rowNum==i && this.cell.colNum==j;
@@ -28,7 +25,6 @@ class AvoidancePiece {
 		return this.cell.neighbors();
 	}
 	
-
 }
 
 class PuzzleDescriptorPosition {
@@ -62,7 +58,79 @@ class PuzzleDescriptor {
 	}
 }
 
-// Descriptor -> RegionCalculator -> Puzzle
+class IndependentSet {
+	constructor(type, size){
+		this.type = type;
+		this.board = new Board(size);
+		this.available = [];
+		this.pieces = [];
+	}
+
+	init(){
+		this.board.init();
+		for (let i = 0; i < this.board.size; i++){
+			for (let j = 0; j < this.board.size; j++){
+				this.available.push(this.board.cells[i][j]);
+			}
+		}
+	}
+	
+	addToSet(){
+
+		//place a random piece;
+		let index = Math.floor(Math.random() * this.available.length);
+		let cell = this.available[index];
+
+		let piece = new AvoidancePiece(this.board);
+		piece.type = this.type;
+		piece.setCell(cell);
+		this.pieces.push(piece);
+
+		//remove the cell from available
+		this.available = this.available.filter(c => c != cell );
+		
+		let nbs = piece.neighbors();
+
+		let newAvailable = [];
+
+		
+		for (let j = 0; j< this.available.length; j++){
+				let found = false;
+				let c = this.available[j];
+				for (let i = 0; i< nbs.length; i++){
+					let n = nbs[i];
+					if (c.rowNum == n.rowNum && c.colNum == n.colNum){
+						found = true;
+					}
+				}
+				if (!found){
+					newAvailable.push(c);
+				}
+		}
+		
+		this.available = newAvailable;
+		
+	}
+
+	buildSet(){
+		// we only allow up to 12 regions in the final puzzle
+		while(this.available.length !=0 && this.pieces.length < 12){
+			this.addToSet();
+		}
+	}
+
+	getDescriptor(){
+		let descriptor = new PuzzleDescriptor(this.type, "" + this.pieces.length);
+		for (let i = 0; i < this.pieces.length; i++){
+			descriptor.addCell(this.pieces[i].getCell().rowNum, this.pieces[i].getCell().colNum);
+		}
+
+		return descriptor;
+	}
+	
+}
+
+// IndependentSet -> Descriptor -> RegionCalculator -> Puzzle
 
 class AvoidancePuzzle {
 	constructor(board, descriptor){
@@ -72,10 +140,12 @@ class AvoidancePuzzle {
 		this.cover = [];
 		this.pieces = [];
 		this.message = "Not solved yet.";
+		this.type = descriptor.type;
 	}
 
 	init(){
 		this.message = "Not solved yet.";
+		this.type = this.descriptor.type;
 		let initialSet = [];
 		this.removePieces();
 		for (let i = 0; i< this.descriptor.cells.length; i++){
@@ -96,6 +166,15 @@ class AvoidancePuzzle {
 			this.pieces[i].getCell().decoration = "";
 		}
 		this.pieces = [];
+	}
+
+	getPieceFor(i,j){
+		for(let k=0; k< this.pieces.length; k++){
+			let p = this.pieces[k];
+			if (p.getCell().rowNum == i && p.getCell().colNum ==j){
+				return p;
+			}
+		}
 	}
 
 	messageHTML(){
@@ -142,6 +221,7 @@ class AvoidancePuzzle {
 		let i = parseInt(target.getAttribute("data-row"));
 		let j = parseInt(target.getAttribute("data-col"));
 		let targetCell = this.board.cells[i][j];
+		
 
 		//1. Get the Region for the cell
 		let regionId =  this.getRegionID(i,j);
@@ -152,24 +232,30 @@ class AvoidancePuzzle {
 		
 		console.log("has existing piece: " + region.hasExistingPiece());
 		//2. If the region has an piece remove it
+		let removeOnly = false;
 		if (region.hasExistingPiece()) {
 			let oldCell = region.getExistingPieceCell();
 			let oldPiece = this.getPiece(oldCell.rowNum, oldCell.colNum);
 			this.pieces = this.pieces.filter(p => p !== oldPiece); 
 			region.removeExistingPieces();
+			if (oldCell.rowNum == i && oldCell.colNum ==j){
+				removeOnly = true;
+			}
 		}
+		 
 		//3. Place a piece in the cell
-		
-		let piece = new AvoidancePiece(this);
-		this.pieces.push(piece);
-		piece.setCell(targetCell);
-		this.colourCells();
+		if (!removeOnly){
+			let piece = new AvoidancePiece(this.board);
+			piece.type = this.type;
+			this.pieces.push(piece);
+			piece.setCell(targetCell);
+		}
+		this.colourCells(); 
 
 		//highlight problems
 		this.calculateCover();
 
-		let newCell = piece.getCell();
-
+		//let newCell = piece.getCell();
 		//if(this.cellInCellSet(newCell, this.cover)){
 		//	let div = getDiv(newCell.rowNum, newCell.colNum);
         //        div.css("color","#FF0000");
@@ -422,7 +508,8 @@ class RegionCalculator{
 
 	colourCells() {
 		let colourList = ["#99FF99", "#D98899", "#7A9EC2", "#E6C88A", "#B39BC8", 
-						 "#C98A70", "#76B5AE", "#A8A29E"];
+						 "#C98A70", "#76B5AE", "#A8A29E", "#E8DF6E", "#7CC2EB", 
+						  "#E6A378", "#C5D97E"];
 	
         for (let i = 0; i < this.regions.length; i++) {
 			let cregion = this.regions[i];

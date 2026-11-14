@@ -40,23 +40,35 @@
 <script src="js/avoidance.js"></script>
 
 <script>
-   
+    let pieces = "queen";
     let gameBoard = new Board(8);
     gameBoard.init();
-    let descriptor = new PuzzleDescriptor("knight", "eight knights");
-    descriptor.addDiagonal();
+    
+    let set = new IndependentSet(pieces,8);
+    set.init();
+    set.buildSet();
+
+    let descriptor = set.getDescriptor();
+    
     let puzzle = new AvoidancePuzzle(gameBoard, descriptor);
     puzzle.init();
     let game = puzzle;
     
     function refresh(){
-          console.log("refresh")
-          $("#boardDisplay").html(htmlForBoard(gameBoard)); 
-          puzzle.init(); 
-          puzzle.colourCells();  
-         
-          
-    }
+        console.log("refresh")
+         $("#boardDisplay").html(htmlForBoard(gameBoard)); 
+
+       set = new IndependentSet(pieces,8);
+       set.init();
+       set.buildSet();
+
+        descriptor = set.getDescriptor();
+        //gameBoard.init();
+        //puzzle = new AvoidancePuzzle(gameBoard, descriptor);
+        puzzle.descriptor = descriptor;
+        puzzle.init(); 
+        puzzle.colourCells();  
+     }
 
     function setButtons() {
         $(".btn-primary").addClass("btn-secondary");
@@ -74,6 +86,15 @@
         $("#advanceButton").on("click", function(event){
             refresh();
         });
+
+        $(".typeButton").on("click", function(event){
+            pieces = event.currentTarget.id;
+            console.log(pieces);
+    		setButtons();
+            refresh();
+    	});
+        
+        setButtons();
         
         refresh();
     });
@@ -82,7 +103,6 @@
             $("#messageDisplay").html(puzzle.messageHTML());
             $("#puzzleDescription").html("<h4>" + puzzle.descriptionHTML() +"</h4>");
         });
-
 
 
 </script>
@@ -137,7 +157,7 @@
 </br>
 <div class="centered">
 <div class="btn-group btn-group-lg " role="group">
-  <button type="button" id="all" class="btn btn-secondary typeButton"><span class='glyphicon glyphicon-asterisk'></span></button>
+  <button type="button" id="king" class="btn btn-secondary typeButton"><span class='glyphicon glyphicon-king'></span></button>
   <button type="button" id="knight" class="btn btn-secondary typeButton"><span class='glyphicon glyphicon-knight'></span></button>
   <button type="button" id="rook" class="btn btn-secondary typeButton"><span class='glyphicon glyphicon-tower'></span></button>
   <button type="button" id="bishop" class="btn btn-secondary typeButton"><span class='glyphicon glyphicon-bishop'></span></button>
