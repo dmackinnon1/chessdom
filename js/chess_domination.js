@@ -53,36 +53,20 @@ class Domination {
 		return this.pieces.map(piece => piece.cell);
 	}
 
-	getCell(i, j) {
-		return this.board.cells[i][j];
-	}
-	
-	
-	clicked(i,j, target) {
-		let cell = this.getCell(i,j);
-		this.selectCell(cell, target);
-	}
-	
-	
-	selectCell(cell, target) {
-		let i = parseInt(target.getAttribute("data-row"));
-		let j = parseInt(target.getAttribute("data-col"));
-		let targetCell = this.board.cells[i][j];
-		let parentTarget = target;
-		if (target.localName === 'span' || target.localName ==='svg') {
-			parentTarget = target.parentNode;
-		}	
-		let existing = this.pieces.find(piece => piece.cell === targetCell);
+	// called when a square is clicked: add a piece there, or remove the one that is there
+	selectCell(cell) {
+		let i = cell.rowNum;
+		let j = cell.colNum;
+		let existing = this.pieces.find(piece => piece.cell === cell);
 		if (existing) {
-			// clicking a piece removes it
 			this.pieces = this.pieces.filter(piece => piece !== existing);
-			targetCell.decoration = "";
-			parentTarget.innerHTML = emptyCell(i,j);	
+			cell.decoration = "";
+			getDiv(i, j).html(emptyCell(i,j));
 		} else {
 			let piece = new Piece(gameType.type);
-			piece.setCell(targetCell);
+			piece.setCell(cell);
 			this.pieces.push(piece);
-			parentTarget.innerHTML = gameGlyph(i,j, piece.type);
+			getDiv(i, j).html(gameGlyph(i,j, piece.type));
 		}
 		this.colourCells();
 		gameDisplay.map = svgMap(this.occupiedCells(), this.cover, this.board.size);
@@ -119,8 +103,8 @@ class Puzzle extends Domination {
 		this.resetStatus();
 	}
 
-	selectCell(cell, target){
-		super.selectCell(cell, target);
+	selectCell(cell){
+		super.selectCell(cell);
 		this.resetStatus();
 		evnts.fireEvent("refreshScore");
 	}

@@ -112,49 +112,29 @@ class AvoidancePuzzle {
 		this.regionCalculator.colourCells();
 	}
 
-	 getCell(i, j) {
-		return this.board.cells[i][j];
-	}
-    clicked(i,j, target){
-        let cell = this.getCell(i,j);
-		this.selectCell(cell, target);
-    }
-
-	getRegionID(i,j){
-		// findIndex returns -1 when no region matches, just as before
-		let cell = this.getCell(i,j);
-		return this.regionCalculator.regions.findIndex(region => region.hasCell(cell));
+	// the region that contains this cell
+	regionFor(cell){
+		return this.regionCalculator.regions.find(region => region.hasCell(cell));
 	}
 
-	getRegionByID(id){
-		let regions = this.regionCalculator.regions;
-		return regions[id];
-	}
-	
-	 selectCell(cell, target) {
+	// called when a square is clicked
+	selectCell(cell) {
 
 		if (this.isSolved()) {
 			return;
 		} 
-		 
-		let i = parseInt(target.getAttribute("data-row"));
-		let j = parseInt(target.getAttribute("data-col"));
-		let targetCell = this.board.cells[i][j];
-		
 
 		//1. Get the Region for the cell
-		let regionId =  this.getRegionID(i,j);
-
-		let region = this.getRegionByID(regionId);
+		let region = this.regionFor(cell);
 		
 		//2. If the region has an piece remove it
 		let removeOnly = false;
 		if (region.hasExistingPiece()) {
 			let oldCell = region.getExistingPieceCell();
-			let oldPiece = this.getPiece(oldCell.rowNum, oldCell.colNum);
+			let oldPiece = this.pieceOn(oldCell);
 			this.pieces = this.pieces.filter(p => p !== oldPiece); 
 			region.removeExistingPieces();
-			if (oldCell === targetCell){
+			if (oldCell === cell){
 				removeOnly = true;
 			}
 		}
@@ -163,7 +143,7 @@ class AvoidancePuzzle {
 		if (!removeOnly){
 			let piece = new Piece(this.type);
 			this.pieces.push(piece);
-			piece.setCell(targetCell);
+			piece.setCell(cell);
 		}
 		this.colourCells(); 
 
@@ -221,8 +201,9 @@ class AvoidancePuzzle {
 		});
 	}
 
-	getPiece(i, j) {
-		return this.pieces.find(p => p.isAt(i,j)) ?? null;
+	// the piece on this cell, or null if it is empty
+	pieceOn(cell) {
+		return this.pieces.find(p => p.cell === cell) ?? null;
 	}
 }
 	

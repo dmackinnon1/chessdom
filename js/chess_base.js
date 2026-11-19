@@ -105,6 +105,10 @@ class Board {
 		this.cells = Array.from({length: this.rowNum}, (_, i) =>
 			Array.from({length: this.colNum}, (_, j) => new Cell(i, j, this)));
 	}
+	getCell(i, j) {
+		return this.cells[i][j];
+	}
+
 	randomStart() {
 		let i = randomInt(this.rowNum);
 		let j = randomInt(this.colNum);
@@ -129,10 +133,6 @@ class Piece {
 	constructor(type) {
 		this.type = type;
 		this.cell = null;
-	}
-
-	isAt(i, j){
-		return this.cell.rowNum == i && this.cell.colNum == j;
 	}
 
 	setCell(cell){
@@ -177,10 +177,19 @@ function emptyCell(i,j){
 	return empty.build();
 };
 
+/*
+* The game currently on the page. Each page sets this when it creates a game;
+* every game class has a selectCell(cell) method that is called when a square is clicked.
+*/
+let game = null;
+
+// onclick handler for every square (set up in htmlForBoard).
+// event.currentTarget is the square's div, the element the handler is attached to;
+// event.target may be the glyph or svg inside it.
 function cellClick(event) {
-	let i = parseInt(event.target.getAttribute("data-row"));
-	let j = parseInt(event.target.getAttribute("data-col"));
-	game.clicked(i,j, event.target); //event.target
+	let i = parseInt(event.currentTarget.getAttribute("data-row"));
+	let j = parseInt(event.currentTarget.getAttribute("data-col"));
+	game.selectCell(game.board.getCell(i, j));
 };
 
 function getDiv(i,j) {

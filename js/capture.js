@@ -6,7 +6,6 @@ class CapturePuzzle {
         this.moves = [];
         this.pieces=[];
         this.selected = null;
-        this.target = null;
 		this.message = "Choose a piece.";
 		this.includeKing = true;
 		this.moveStack = [];
@@ -51,13 +50,6 @@ class CapturePuzzle {
 		evnts.fireEvent("refreshMessage");
 	}
 
-    getCell(i, j) {
-		return this.board.cells[i][j];
-	}
-    clicked(i,j, target){
-        let cell = this.getCell(i,j);
-		this.selectCell(cell, target);
-    }
 
 	checkForSolved(){
 		return this.pieces.length == 1;
@@ -126,12 +118,9 @@ class CapturePuzzle {
 		}
 	}
 
-    selectCell(cell, target) {
-		let i = parseInt(target.getAttribute("data-row"));
-		let j = parseInt(target.getAttribute("data-col"));
-		let targetCell = this.board.cells[i][j];
-
-		let clickedOn =this.getCapturePiece(i,j);
+    // called when a square is clicked
+    selectCell(cell) {
+		let clickedOn = this.getCapturePiece(cell);
 		if (this.selected == null && clickedOn!=null){
 			this.selected = clickedOn;
             if (this.selected.remainingMoves() === 1){
@@ -171,9 +160,10 @@ class CapturePuzzle {
 		
 	}
 
-    getCapturePiece(i, j) {
+    // the piece on this cell, or null if it is empty
+    getCapturePiece(cell) {
         // find() returns undefined when nothing matches; callers expect null
-        return this.pieces.find(p => p.isAt(i,j)) ?? null;
+        return this.pieces.find(p => p.cell === cell) ?? null;
     }
 
     solutionHTML(){
