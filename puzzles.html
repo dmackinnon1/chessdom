@@ -44,7 +44,6 @@ let puzzles = [];
 let originals = [];
 gameType.type  = 'queen';
 $(document).ready(function(){
-	console.log("about to fetch remote data");
 	$.getJSON("data/puzzles.json", function(data){
 		originals = data;
 	}).done(function() {

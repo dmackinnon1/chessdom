@@ -1,24 +1,6 @@
 'use strict';
 let gameType ={};
 
-gameType.isKnight = function() {
-	return gameType.type === "knight";
-};
-
-gameType.isKing = function() {
-	return gameType.type === "king";
-};
-
-gameType.isRook = function() {
-	return gameType.type === "rook";
-};
-
-gameType.isBishop = function() {
-	return gameType.type === "bishop";
-};
-gameType.isQueen = function() {
-	return gameType.type === "queen";
-}
 class Cell {
 		
 	constructor(rowNum, colNum, board) {
@@ -28,10 +10,6 @@ class Cell {
 		this.decoration = "";
 	}
 	
-	
-	getDisplay() {
-		return this.decoration;	
-	}
 	
 	neighbor(i,j) {
 		if ((this.rowNum + i < this.board.getRowSize())
@@ -107,60 +85,34 @@ class Cell {
 		return this.neighbor(-1,-1);
 	}
 	
+	// every other cell in this cell's row
 	row(){
-		let row = [];
-		for (let i = 0; i < this.board.rowNum; i++) {
-			if (i !== this.colNum) row.push(this.board.cells[this.rowNum][i]);	
-		}
-		return row;
+		return this.board.cells[this.rowNum].filter(c => c.colNum !== this.colNum);
 	}
 
+	// every other cell in this cell's column
 	column(){
-		let col = [];
-		for (let i = 0; i < this.board.colNum; i++) {
-			if (i !== this.rowNum) col.push(this.board.cells[i][this.colNum]);	
+		return this.board.cells.map(r => r[this.colNum]).filter(c => c.rowNum !== this.rowNum);
+	}
+
+	// cells from here to the edge of the board, stepping (di, dj) each time
+	// (a while loop is still the clearest way to walk until we fall off the board)
+	ray(di, dj){
+		let cells = [];
+		let next = this.neighbor(di, dj);
+		while (next != null) {
+			cells.push(next);
+			next = next.neighbor(di, dj);
 		}
-		return col;
+		return cells;
 	}
 
 	downDiagonal(){
-		let diag = [];
-		let i = this.rowNum +1; 
-		let j = this.colNum +1;
-		while( i< this.board.rowNum && j<this.board.colNum){
-			diag.push(this.board.cells[i][j]);
-			i++;
-			j++;
-		}
-
-		i = this.rowNum -1; 
-		j = this.colNum -1;
-		while( i >= 0 && j >= 0){
-			diag.push(this.board.cells[i][j]);
-			i--;
-			j--;
-		}
-		return diag;
+		return [...this.ray(1, 1), ...this.ray(-1, -1)];
 	}
 
 	upDiagonal(){
-		let diag = [];
-		let i = this.rowNum -1; 
-		let j = this.colNum +1;
-		while( i >= 0 && j<this.board.colNum){
-			diag.push(this.board.cells[i][j]);
-			i--;
-			j++;
-		}
-
-		i = this.rowNum +1; 
-		j = this.colNum -1;
-		while( i < this.board.rowNum && j >= 0){
-			diag.push(this.board.cells[i][j]);
-			i++;
-			j--;
-		}
-		return diag;
+		return [...this.ray(-1, 1), ...this.ray(1, -1)];
 	}
 
 	//refactor this and glyph to be functional
@@ -241,20 +193,6 @@ class Cell {
 		return list;
 	}
 
-
-	
-	isNeighbor(cell) {
-		let nbrs = this.neighbors();
-		for (let i = 0; i < nbrs.length; i ++) {
-			if (cell.isEqual(nbrs[i])) return true;
-		}
-		return false;
-	}
-	
-	degree(){
-		return this.neighbors().length;
-	}
-	
 	toString() {
 		return "Cell [" + this.rowNum + "][" + this.colNum +"]: " + this.decoration;
 	}
@@ -279,12 +217,8 @@ class Board {
 	}
 	
 	init() {
-		for (let i = 0; i < this.rowNum; i ++) {
-			this.cells[i] = [];
-			for (let j = 0; j < this.colNum; j ++){
-				this.cells[i].push (new Cell(i, j, this));
-			}
-		}
+		this.cells = Array.from({length: this.rowNum}, (_, i) =>
+			Array.from({length: this.colNum}, (_, j) => new Cell(i, j, this)));
 	}
 	randomStart() {
 		let i = randomInt(this.rowNum);
@@ -292,21 +226,11 @@ class Board {
 		return this.cells[i][j];
 	}
 	
-	toString () {
-		let result = "";
-		for (let i = 0; i < this.rowNum; i ++){
-			result += this.cells[i];
-		}
-		return result;
-	}
 	getRowSize() {
 		return this.rowNum;
 	}
 	getColumnSize(){
 		return this.colNum;
-	}
-	getSize() {
-		return this.colNum * this.rowNum;
 	}
 };
 
@@ -316,20 +240,14 @@ class Board {
 */
 
 function htmlForBoard(board) {
-	let html = "<table border = 1 cellspacing = 1 cellpadding = 1 align='center'>";
-	for (let i = 0; i < board.cells.length; i++){
-		let row = board.cells[i];
-		html += "<tr>";
-		for (let j = 0; j < row.length; j ++) {
-			let c = row[j];
-			html += "<td><div id='cell" + i +""+ j +"' class='gameCell' onclick='cellClick(event)'";
-			html += " data-row='"+ i + "' data-col='" + j + "'>";
-			html += emptyCell(i,j) + "</div></td>";
-		}
-		html += "</tr>";
-	}
-	html += "</table>";
-	return html;	
+	let rows = board.cells.map((row, i) => {
+		let tds = row.map((c, j) =>
+			"<td><div id='cell" + i +""+ j +"' class='gameCell' onclick='cellClick(event)'"
+			+ " data-row='"+ i + "' data-col='" + j + "'>"
+			+ emptyCell(i,j) + "</div></td>");
+		return "<tr>" + tds.join("") + "</tr>";
+	});
+	return "<table border = 1 cellspacing = 1 cellpadding = 1 align='center'>" + rows.join("") + "</table>";
 };
 
 function emptyCell(i,j){
@@ -364,49 +282,36 @@ function randomInt(lessThan){
 	return selection;
 };
 
+// [0, 1, ..., n-1] -- handy for looping a fixed number of times with forEach
+function range(n){
+	return [...Array(n).keys()];
+};
+
 function svgMap(pieces, cover, size) {
 	let svg = new Bldr("svg");
 	let boardSize = 30*size;
 	svg.att("align", "center").att("width",boardSize).att("height",boardSize);
 	let cellSize = boardSize/size;
-	//first the board
-	for (let i = 0; i < size; i++) {
-		for (let j = 0; j < size; j ++) {
-			let x = i*cellSize;
-			let y = j*cellSize;
-			if (i%2==0 && j%2==0){
-				let rect = new Bldr("rect").att("x", x).att("y",y);
-				rect.att("width", cellSize).att("height",cellSize).att("fill", "#ccccb3"); 			
-				svg.elem(rect);
-			}
-			if (i%2!=0 && j%2!=0){
-				let rect = new Bldr("rect").att("x", x).att("y",y);
-				rect.att("width", cellSize).att("height",cellSize).att("fill", "#ccccb3"); 			
-				svg.elem(rect);
-			}
+	//first the board: shade the squares where i and j are both even or both odd
+	range(size).forEach(i => range(size).forEach(j => {
+		if ((i + j) % 2 == 0){
+			let rect = new Bldr("rect").att("x", i*cellSize).att("y", j*cellSize);
+			rect.att("width", cellSize).att("height",cellSize).att("fill", "#ccccb3");
+			svg.elem(rect);
 		}
-	}
+	}));
+
 	//finally, the dots
-	for (let i=0; i< pieces.length; i++) {
-		let cell = pieces[i];
-		let x = (15 + cell.colNum*cellSize);
-		let y = (15 + cell.rowNum*cellSize);
-		let circle = new Bldr("circle").att("cx",x).att("cy", y);
-		circle.att("r",3).att("stroke", "black").att("stroke-width",1).att("fill","grey");
+	let dot = (cell, radius, fill) => {
+		let circle = new Bldr("circle").att("cx", 15 + cell.colNum*cellSize).att("cy", 15 + cell.rowNum*cellSize);
+		circle.att("r", radius).att("stroke", "black").att("stroke-width",1).att("fill", fill);
 		svg.elem(circle);
-		let c0 = new Bldr("circle").att("cx",x).att("cy", y);
-		c0.att("r",6).att("stroke", "black").att("stroke-width",1).att("fill","black");
-		svg.elem(c0);						
-	}
-	
-	for (let i=0; i< cover.length; i++) {
-		let cell = cover[i];
-		let x = (15 + cell.colNum*cellSize);
-		let y = (15 + cell.rowNum*cellSize);
-		let circle = new Bldr("circle").att("cx",x).att("cy", y);
-		circle.att("r",3).att("stroke", "black").att("stroke-width",1).att("fill","grey");
-		svg.elem(circle);
-	}
+	};
+	pieces.forEach(cell => {
+		dot(cell, 3, "grey");
+		dot(cell, 6, "black");
+	});
+	cover.forEach(cell => dot(cell, 3, "grey"));
 
 	return svg.build();
 };

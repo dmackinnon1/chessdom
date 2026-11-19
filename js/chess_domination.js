@@ -22,51 +22,32 @@ class Domination {
 	}
 
 	colourCells(){
-		for (let i = 0; i < this.board.rowNum; i++) {
-			for (let j = 0; j < this.board.colNum; j++) {
-				let div = getDiv(i, j);
-				div.attr("style", "color:black");		
-			}
-		}
+		// .flat() turns the 2D grid of cells into one list
+		this.board.cells.flat().forEach(cell =>
+			getDiv(cell.rowNum, cell.colNum).attr("style", "color:black"));
+
 		this.cover = [];
-		for (let k = 0; k < this.pieces.length; k++)  {
-			let selected = this.pieces[k];
-			let nbs = selected.neighbors();
-			for (let l = 0; l < nbs.length; l++){
-				let nbCell = nbs[l];
-				let i = nbCell.rowNum;
-				let j = nbCell.colNum;
-				if (!this.isInSet(i,j,this.cover)){
-						this.cover.push(nbCell);
-						let div = getDiv(i, j);
-						div.css("background","#99ff99");
+		this.pieces.forEach(selected => {
+			selected.neighbors().forEach(nbCell => {
+				if (!this.isInSet(nbCell.rowNum, nbCell.colNum, this.cover)){
+					this.cover.push(nbCell);
+					getDiv(nbCell.rowNum, nbCell.colNum).css("background","#99ff99");
 				}
-			}
-		}
-
+			});
+		});
 	}
-	
+
+	// number of squares that are neither occupied nor attacked
 	dominationScore() {
-		let score = 0;
-		for (let i = 0; i < this.board.rowNum; i++) {
-			for (let j = 0; j < this.board.colNum; j++) {
-				if (!(this.isInSet(i,j, this.cover) || this.isInSet(i,j,this.pieces))){
-					score ++;
-				}
-			}
-		}
-		return score;	
+		return this.board.cells.flat().filter(cell =>
+			!(this.isInSet(cell.rowNum, cell.colNum, this.cover)
+			  || this.isInSet(cell.rowNum, cell.colNum, this.pieces))).length;
 	}
 
+	// number of pieces that are attacked by another piece
 	independenceScore() {
-		let score = 0;
-		for(let k=0; k <this.pieces.length; k++) {
-			let cell = this.pieces[k];
-			if (this.isInSet(cell.rowNum, cell.colNum, this.cover)) {
-				score ++;
-			}
-		}
-		return score;
+		return this.pieces.filter(cell =>
+			this.isInSet(cell.rowNum, cell.colNum, this.cover)).length;
 	}
 
 	getCell(i, j) {
@@ -81,24 +62,12 @@ class Domination {
 	
 	
 	isInSet(i,j, set) {
-		for (let k=0; k < set.length; k++) {
-			let current = set[k];
-			if (current.rowNum == i && current.colNum == j) return true;
-		}
-		return false;
+		// some() stops as soon as one element matches, like the early return did
+		return set.some(current => current.rowNum == i && current.colNum == j);
 	}
-	
+
 	remove(i,j) {
-		let reduced = [];
-		for (let k=0; k < this.pieces.length; k++) {
-			let current = this.pieces[k];
-			if (current.rowNum == i && current.colNum == j){
-				continue;
-			} else {
-				reduced.push(current);
-			}
-		}
-		this.pieces = reduced;
+		this.pieces = this.pieces.filter(current => !(current.rowNum == i && current.colNum == j));
 	}
 	
 	selectCell(cell, target) {
@@ -232,19 +201,8 @@ function scoreDisplay(pieces, domination, independence) {
 
 //utilities
 
-function randomInt(lessThan){
-	return Math.floor(Math.random()*lessThan);
-};
-
 function removeElement(array, e) {
-	let newArray = [];
-	let x;
-	for (x in array) {
-		if (e !== array[x]) {
-			newArray.push(array[x]);
-		}
-	}
-	return newArray;
+	return array.filter(x => x !== e);
 }
 
 function randomRange(greaterThan, lessThan){

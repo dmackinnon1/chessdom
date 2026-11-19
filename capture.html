@@ -46,13 +46,11 @@
      var depth = 0;
      var game;
      var levels = [3,5,7,9,11];
-     var backup;
      var kings = true;
      var pieces = 'all';
 
     function refresh(level = 0){
         depth = level;
-        console.log("depth is: " + depth);
         gameBoard = new Board(8);
         gameBoard.init();
         let generator = new PuzzleGenerator(gameBoard,kings,pieces);
@@ -64,7 +62,6 @@
         $("#solutionDisplay").html(puzzle.solutionHTML());
         $("#messageDisplay").html(puzzle.messageHTML());
         setLevel();
-        backup = puzzle.clone();
         $('#solution').collapse('hide');
         $("#advanceButton").removeClass("btn-primary");
         $("#advanceButton").addClass("btn-secondary");
@@ -82,7 +79,6 @@
     }
 
     function setLevel() {
-       // $("#levelDisplay").html("<img src=\"imgs/level" + (depth+1) + ".svg\" width=\"190\" height=\"50\"/>");
         $("#levelDisplay").html("<h4>Puzzle " + (depth+1) + " of " + levels.length + ": " +(levels[depth] + 1) + " pieces." + "</h4>");
 
     }
@@ -127,13 +123,11 @@
 
         $(".checkbox").on('click',function(e){	
             kings = $('#kings:checked').val()=='yes';
-            console.log("kings setting updated to " + kings);
             refresh();
          });
         
         $(".typeButton").on("click", function(event){
         pieces = event.currentTarget.id;
-        console.log(pieces);
 		setButtons();
         refresh();
 	});
@@ -222,11 +216,6 @@
 </div>
 </form>
 
-            <!-- hr>
-            <div id="puzzleDescription" style="text-align=center"></div>
-            <hr>
-            <h4><div id="puzzleStatus" style="text-align=center"></div></h4>
-            -->
             <hr>
             <h3><div id="boardDisplay" style="text-align=center"></div></h3>
            
@@ -257,10 +246,8 @@
             
             <div id="resetButtonHolder">
                 <button type="button" id="resetButton", class="btn btn-primary">New Puzzle Set</span></button>
-                <!--button type="button" id="goBackButton", class="btn btn-primary">Reset Current Puzzle</span></button -->
             </div>
             <hr>
-            <!div id="mapDisplay" style="text-align=center"></div>
             <hr>
         </div>
         <div class='col-sm-1'></div>
