@@ -1,5 +1,4 @@
 'use strict';
-let gameType ={};
 
 // one-square steps: up, down, right, left, then the four diagonals
 const ORTHOGONAL_STEPS = [[1,0], [-1,0], [0,1], [0,-1]];
@@ -162,20 +161,25 @@ class Piece {
 function htmlForBoard(board) {
 	let rows = board.cells.map((row, i) => {
 		let tds = row.map((c, j) =>
-			"<td><div id='cell" + i +""+ j +"' class='gameCell' onclick='cellClick(event)'"
+			"<td><div id='" + cellId(i, j) + "' class='gameCell' onclick='cellClick(event)'"
 			+ " data-row='"+ i + "' data-col='" + j + "'>"
-			+ emptyCell(i,j) + "</div></td>");
+			+ emptyCell() + "</div></td>");
 		return "<tr>" + tds.join("") + "</tr>";
 	});
 	return "<table border = 1 cellspacing = 1 cellpadding = 1 align='center'>" + rows.join("") + "</table>";
 };
 
-function emptyCell(i,j){
+// an empty square: a blank svg the same size as a piece glyph
+function emptyCell(){
 	let empty = new Bldr("svg").att("width","28").att("height","28");
-	empty.att("data-row",i).att("data-col",j);
 	empty.att("stroke-width",0);
 	return empty.build();
 };
+
+// the id of a square's div, e.g. "cell-3-10" (the dashes keep row 1, column 10 apart from row 11, column 0)
+function cellId(i, j){
+	return "cell-" + i + "-" + j;
+}
 
 /*
 * The game currently on the page. Each page sets this when it creates a game;
@@ -192,14 +196,35 @@ function cellClick(event) {
 	game.selectCell(game.board.getCell(i, j));
 };
 
-// show a Bootstrap button as the highlighted choice (btn-primary) or as inactive (btn-secondary)
-function setButtonActive(selector, active) {
-	$(selector).removeClass(active ? "btn-secondary" : "btn-primary");
-	$(selector).addClass(active ? "btn-primary" : "btn-secondary");
+// small helpers for working with the page (plain DOM, no libraries)
+
+// the element with this id
+function byId(id) {
+	return document.getElementById(id);
 }
 
+// call handler(event) whenever any element matching the CSS selector is clicked
+function onClick(selector, handler) {
+	document.querySelectorAll(selector).forEach(element => element.addEventListener("click", handler));
+}
+
+// show Bootstrap buttons as the highlighted choice (btn-primary) or as inactive (btn-secondary)
+function setButtonActive(selector, active) {
+	document.querySelectorAll(selector).forEach(button => {
+		button.classList.toggle("btn-primary", active);
+		button.classList.toggle("btn-secondary", !active);
+	});
+}
+
+// highlight the button with this id, and show the rest of its group (e.g. ".typeButton") as unselected
+function selectButton(groupSelector, id) {
+	setButtonActive(groupSelector, false);
+	setButtonActive("#" + id, true);
+}
+
+// the div for the square at row i, column j
 function getDiv(i,j) {
-	return $("#cell" + i +""+j);
+	return byId(cellId(i, j));
 };
 	
 
@@ -255,8 +280,8 @@ const GLYPHS = {
 	queen:  "queen",
 };
 
-function gameGlyph(i,j, type) {
+// the icon for a piece type
+function gameGlyph(type) {
 	let name = GLYPHS[type] ?? "square-empty";
-	return "<span class='glyphicon glyphicon-" + name + "' "
-		+ " data-row='"+ i + "' data-col='" + j + "'>";
+	return "<span class='glyphicon glyphicon-" + name + "'></span>";
 }

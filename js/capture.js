@@ -329,22 +329,22 @@ function drawCaptureBoard(puzzle) {
         let j = cell.colNum;
         let div = getDiv(i, j);
         let piece = puzzle.getCapturePiece(cell);
-        div.attr("style", "color:black");
-        div.html(piece ? gameGlyph(i, j, piece.type) : emptyCell(i, j));
+        div.setAttribute("style", "color:black");
+        div.innerHTML = piece ? gameGlyph(piece.type) : emptyCell();
     });
 
     let selected = puzzle.selected;
     if (selected != null){
-        getDiv(selected.cell.rowNum, selected.cell.colNum).css("background", SELECTED_SHADE[selected.remainingMoves()]);
+        getDiv(selected.cell.rowNum, selected.cell.colNum).style.background = SELECTED_SHADE[selected.remainingMoves()];
         selected.outNeighbors().forEach(target =>
-            getDiv(target.cell.rowNum, target.cell.colNum).css("background", "#99ff99"));
+            getDiv(target.cell.rowNum, target.cell.colNum).style.background = "#99ff99");
     }
 }
 
 // everything the Piece Meal page shows for a puzzle
 function showCapture(puzzle) {
     drawCaptureBoard(puzzle);
-    $("#messageDisplay").html(puzzle.message);
+    byId("messageDisplay").innerHTML = puzzle.message;
     setButtonActive("#undoButton", puzzle.canUndo());
     setButtonActive("#advanceButton", puzzle.checkForSolved());
 }

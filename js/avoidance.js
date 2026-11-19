@@ -254,7 +254,7 @@ function drawAvoidanceBoard(puzzle) {
 	// the region colour goes on the table cell (the div's parent) behind each square
 	puzzle.regions().forEach((region, index) => {
 		region.cells.forEach(cell =>
-			getDiv(cell.rowNum, cell.colNum).parent().css("background", REGION_COLOURS[index]));
+			getDiv(cell.rowNum, cell.colNum).parentElement.style.background = REGION_COLOURS[index]);
 	});
 
 	let attacked = puzzle.piecesInCover().map(piece => piece.cell);
@@ -263,10 +263,10 @@ function drawAvoidanceBoard(puzzle) {
 		let j = cell.colNum;
 		let div = getDiv(i, j);
 		let piece = puzzle.pieceOn(cell);
-		div.attr("style", "color:black");
-		div.html(piece ? gameGlyph(i, j, piece.type) : emptyCell(i, j));
+		div.setAttribute("style", "color:black");
+		div.innerHTML = piece ? gameGlyph(piece.type) : emptyCell();
 		if (attacked.includes(cell)) {
-			div.css("color", "#FF0000");
+			div.style.color = "#FF0000";
 		}
 	});
 }
@@ -274,9 +274,9 @@ function drawAvoidanceBoard(puzzle) {
 // everything the Safe Harbour page shows for a puzzle
 function showAvoidance(puzzle) {
 	drawAvoidanceBoard(puzzle);
-	$("#messageDisplay").html(puzzle.message);
-	$("#puzzleDescription").html("<h4>Place " + puzzle.regions().length + " independent " + puzzle.type
-		+ "s, one in each coloured region of the board.</h4>");
+	byId("messageDisplay").innerHTML = puzzle.message;
+	byId("puzzleDescription").innerHTML = "<h4>Place " + puzzle.regions().length + " independent " + puzzle.type
+		+ "s, one in each coloured region of the board.</h4>";
 }
 
 // the solution: where the pieces of the original independent set were
