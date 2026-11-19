@@ -232,10 +232,6 @@ function scoreDisplay(pieces, domination, independence) {
 
 //utilities
 
-function randomInt(lessThan){
-	return Math.floor(Math.random()*lessThan);
-};
-
 function removeElement(array, e) {
 	let newArray = [];
 	let x;

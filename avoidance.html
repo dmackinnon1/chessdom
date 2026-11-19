@@ -55,7 +55,6 @@
     let game = puzzle;
     
     function refresh(){
-        console.log("refresh")
          $("#boardDisplay").html(htmlForBoard(gameBoard)); 
 
        set = new IndependentSet(pieces,8);
@@ -63,8 +62,6 @@
        set.buildSet();
 
         descriptor = set.getDescriptor();
-        //gameBoard.init();
-        //puzzle = new AvoidancePuzzle(gameBoard, descriptor);
         puzzle.descriptor = descriptor;
         puzzle.init(); 
         puzzle.colourCells();
@@ -91,7 +88,6 @@
 
         $(".typeButton").on("click", function(event){
             pieces = event.currentTarget.id;
-            console.log(pieces);
     		setButtons();
             refresh();
     	});
@@ -171,26 +167,11 @@
 </div>
 </div>
 
-<!--            
-<form>
-<div class="checkbox centered">
-<label><input id="kings" type="checkbox" checked=true value="yes">include king?</label>
-</div>
-</form>
--->
             <hr>
             <div id="puzzleDescription" style="text-align=center"></div>
-            <!--
-            <h4><div id="puzzleStatus" style="text-align=center"></div></h4>
-            -->
             <hr>
             <h3><div id="boardDisplay" style="text-align=center"></div></h3>
 
-            <!--
-            <div id="undoButtonHolder">
-                        <button type="button" id="undoButton", class="btn btn-secondary">Undo last Move</span></button>
-            </div>
-            -->
             <hr>
             <h4><div id="messageDisplay" style="text-align=center"></div></h4>
             <hr>

@@ -48,7 +48,6 @@ function refresh() {
 	var gameBoard = new Board(size);
 	gameBoard.init();
 	game = new Domination(gameBoard);
-	console.log('board size is now ' + size);
 	$("#boardDisplay").html(htmlForBoard(game.getBoard()));
 	setButtons();
 	game.startGame();
@@ -160,7 +159,6 @@ path of another. For example, try to find:
   <button type="button" id="b8x8" class="btn btn-secondary sizeButton" data-value = "8">8x8</button>
   <button type="button" id="b9x9" class="btn btn-secondary sizeButton" data-value = "9">9x9</button>
   <button type="button" id="b10x10" class="btn btn-secondary sizeButton" data-value = "10">10x10</button>
- <!-- <button type="button" id="b12x12" class="btn btn-secondary">12x12</button>-->
 </div>
 </div>
 <br>

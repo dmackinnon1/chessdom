@@ -1,24 +1,6 @@
 'use strict';
 let gameType ={};
 
-gameType.isKnight = function() {
-	return gameType.type === "knight";
-};
-
-gameType.isKing = function() {
-	return gameType.type === "king";
-};
-
-gameType.isRook = function() {
-	return gameType.type === "rook";
-};
-
-gameType.isBishop = function() {
-	return gameType.type === "bishop";
-};
-gameType.isQueen = function() {
-	return gameType.type === "queen";
-}
 class Cell {
 		
 	constructor(rowNum, colNum, board) {
@@ -28,10 +10,6 @@ class Cell {
 		this.decoration = "";
 	}
 	
-	
-	getDisplay() {
-		return this.decoration;	
-	}
 	
 	neighbor(i,j) {
 		if ((this.rowNum + i < this.board.getRowSize())
@@ -241,20 +219,6 @@ class Cell {
 		return list;
 	}
 
-
-	
-	isNeighbor(cell) {
-		let nbrs = this.neighbors();
-		for (let i = 0; i < nbrs.length; i ++) {
-			if (cell.isEqual(nbrs[i])) return true;
-		}
-		return false;
-	}
-	
-	degree(){
-		return this.neighbors().length;
-	}
-	
 	toString() {
 		return "Cell [" + this.rowNum + "][" + this.colNum +"]: " + this.decoration;
 	}
@@ -292,21 +256,11 @@ class Board {
 		return this.cells[i][j];
 	}
 	
-	toString () {
-		let result = "";
-		for (let i = 0; i < this.rowNum; i ++){
-			result += this.cells[i];
-		}
-		return result;
-	}
 	getRowSize() {
 		return this.rowNum;
 	}
 	getColumnSize(){
 		return this.colNum;
-	}
-	getSize() {
-		return this.colNum * this.rowNum;
 	}
 };
 
