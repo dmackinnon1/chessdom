@@ -53,17 +53,12 @@
         gameBoard = new Board(8);
         let generator = new PuzzleGenerator(gameBoard,kings,pieces);
         puzzle = generator.puzzleOfDepth(levels[depth]);
-        puzzle.resetPieceCounts();
         game = puzzle;
         $("#boardDisplay").html(htmlForBoard(gameBoard));
-        puzzle.colourCells();
-        $("#solutionDisplay").html(puzzle.solutionHTML());
-        $("#messageDisplay").html(puzzle.messageHTML());
+        $("#solutionDisplay").html(captureSolutionHTML(puzzle));
         setLevel();
         $('#solution').collapse('hide');
-        $("#advanceButton").removeClass("btn-primary");
-        $("#advanceButton").addClass("btn-secondary");
-          
+        showCapture(puzzle);
     }
 
     function setButtons() {
@@ -98,25 +93,8 @@
                puzzle.undoLastMove();
         });
 
-        evnts.addCallback("refreshMessage", function () {
-            $("#messageDisplay").html(puzzle.messageHTML());
-        });
-
-        evnts.addCallback("refreshMessage", function () {
-          if(puzzle.canUndo()){
-              $("#undoButton").removeClass("btn-secondary");
-              $("#undoButton").addClass("btn-primary");
-          } else {
-              $("#undoButton").removeClass("btn-primary");
-              $("#undoButton").addClass("btn-secondary");
-          }
-            if(puzzle.checkForSolved()){
-              $("#advanceButton").removeClass("btn-secondary");
-              $("#advanceButton").addClass("btn-primary");
-          } else {
-              $("#advanceButton").removeClass("btn-primary");
-              $("#advanceButton").addClass("btn-secondary");
-          }
+        evnts.addCallback("gameChanged", function () {
+            showCapture(puzzle);
         });
 
         $(".checkbox").on('click',function(e){	

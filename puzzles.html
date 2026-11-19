@@ -66,8 +66,7 @@ function refresh() {
 	let gameBoard = new Board(size);
 	game = new Puzzle(gameBoard, selected);
 	$("#boardDisplay").html(htmlForBoard(game.getBoard()));
-	$("#puzzleDescription").html(game.puzzleDescription());	
-	$("#puzzleStatus").html(gameDisplay.status);
+	$("#puzzleDescription").html(puzzleDescription(game));
 	game.startGame();
 }
 
@@ -96,16 +95,9 @@ $(document).ready(function(){
 });
 
 $(document).ready(function(){  
-    evnts.addCallback("refreshMap", function() {
-		$("#mapDisplay").html(gameDisplay.map);
-    });
-
-    evnts.addCallback("refreshScore", function() {
-		$("#scoreDisplay").html(gameDisplay.score);
-    });
-
-    evnts.addCallback("refreshScore", function() {
-		$("#puzzleStatus").html(gameDisplay.status);
+    evnts.addCallback("gameChanged", function() {
+		showDomination(game);
+		$("#puzzleStatus").html(puzzleStatus(game));
     });
  });
 

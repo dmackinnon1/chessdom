@@ -192,16 +192,17 @@ function cellClick(event) {
 	game.selectCell(game.board.getCell(i, j));
 };
 
+// show a Bootstrap button as the highlighted choice (btn-primary) or as inactive (btn-secondary)
+function setButtonActive(selector, active) {
+	$(selector).removeClass(active ? "btn-secondary" : "btn-primary");
+	$(selector).addClass(active ? "btn-primary" : "btn-secondary");
+}
+
 function getDiv(i,j) {
 	return $("#cell" + i +""+j);
 };
 	
 
-//object containing displayable elements
-let gameDisplay = {};
-gameDisplay.map = "";
-gameDisplay.score = "";
-gameDisplay.status = "";
 
 /**
  * utilities

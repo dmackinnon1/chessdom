@@ -83,12 +83,8 @@ $(document).ready(function(){
 
 $(document).ready(function(){
    
-    evnts.addCallback("refreshMap", function() {
-		$("#mapDisplay").html(gameDisplay.map);
-    });
-
-    evnts.addCallback("refreshScore", function() {
-		$("#scoreDisplay").html(gameDisplay.score);
+    evnts.addCallback("gameChanged", function() {
+		showDomination(game);
     });
     refresh();
 });

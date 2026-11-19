@@ -1,5 +1,14 @@
 'use strict';
 
+/*
+* Piece Meal: every piece may capture at most twice, and the goal is to finish
+* with a single piece (the king, if there is one). Captures are only allowed
+* as real chess moves, and the king may never be captured.
+*
+* CapturePuzzle holds the state of one puzzle and knows nothing about the page:
+* after every change it fires the "gameChanged" event, and the display code
+* (bottom of this file) draws the puzzle from its state.
+*/
 class CapturePuzzle {
     constructor(board) {
         this.board = board;
@@ -11,6 +20,7 @@ class CapturePuzzle {
 		this.moveStack = [];
     }
 
+	// start every piece with its full two captures
 	resetPieceCounts(){
 		this.pieces.forEach(piece => piece.count = 0);
 	}
@@ -23,8 +33,6 @@ class CapturePuzzle {
     }
 	capture(source, target){
 		this.pieces = this.pieces.filter(p => p !== target);
-		let div = getDiv(source.cell.rowNum, source.cell.colNum);
-		div.html(emptyCell(source.cell.rowNum,source.cell.colNum));
         source.cell.decoration = "";
         target.cell.decoration = "";
 		let ogCell = source.cell;
@@ -43,11 +51,9 @@ class CapturePuzzle {
 		}
 		let move = this.moveStack.pop();
 		move.reverseMove();
-		this.colourCells();
 		this.message = "Choose a piece";
 		this.selected = null;
-		this.colourCells();
-		evnts.fireEvent("refreshMessage");
+		evnts.fireEvent("gameChanged");
 	}
 
 
@@ -154,10 +160,7 @@ class CapturePuzzle {
 		} else {
 			this.checkForStuck();
 		}
-		this.colourCells();
-		evnts.fireEvent("refreshMessage");
-		
-		
+		evnts.fireEvent("gameChanged");
 	}
 
     // the piece on this cell, or null if it is empty
@@ -166,49 +169,9 @@ class CapturePuzzle {
         return this.pieces.find(p => p.cell === cell) ?? null;
     }
 
-    solutionHTML(){
-        // moves are recorded while building the puzzle backwards, so show them in reverse.
-        // [...this.moves] copies the list first: reverse() on its own would change this.moves itself
-        let items = [...this.moves].reverse().map(move => "<li>" + move + "</li>\n");
-        return "<ol>\n" + items.join("") + "</ol>\n";
-    }
-
-	messageHTML(){
-		return this.message;
-	}
-
     randomAvailablePiece(){
         let available = this.piecesWithMovesAndSpace();
         return available[Math.floor(Math.random() * available.length)];
-    }
-
-    colourCells() {
-        this.board.cells.flat().forEach(cell => {
-            let div = getDiv(cell.rowNum, cell.colNum);
-            div.attr("style", "color:black");
-            if (cell.decoration !=""){
-                div.html(gameGlyph(cell.rowNum, cell.colNum, cell.decoration));
-            }
-        });
-
-        if (this.selected != null){
-            let si = this.selected.cell.rowNum;
-            let sj= this.selected.cell.colNum;
-            let sdiv = getDiv(si, sj);
-            if (this.selected.remainingMoves() == 0) {
-                sdiv.css("background","rgb(128,128,128,1)");
-            } else if (this.selected.remainingMoves() == 1) {
-                sdiv.css("background","rgb(128,128,128,0.5)");
-            }else if(this.selected.remainingMoves() == 2){
-                sdiv.css("background","rgb(128,128,128,0.2)");
-            }
-
-
-            // highlight the pieces the selected piece can capture
-            this.selected.neighbors()
-                .filter(nbCell => this.selected.cellIsReachable(nbCell) && nbCell.decoration !== "")
-                .forEach(nbCell => getDiv(nbCell.rowNum, nbCell.colNum).css("background","#99ff99"));
-        }
     }
 }
 
@@ -341,9 +304,54 @@ class PuzzleGenerator{
             + newCell.position()  + " takes " + newPiece.type +" at " + ogCell.position() );
     }
 
+    // build a puzzle backwards: start from one piece and "un-capture" depth times.
+    // Each un-capture uses up one of a piece's two captures, so the counts are
+    // reset at the end to give the player a fresh puzzle.
     puzzleOfDepth(depth){
         this.initialPosition();
         range(depth).forEach(() => this.existingCapture());
+        this.puzzle.resetPieceCounts();
         return this.puzzle;
     }
+}
+
+/**
+* display: these functions read a puzzle and update the page
+*/
+
+// grey behind the selected piece: darker the fewer captures it has left
+const SELECTED_SHADE = ["rgb(128,128,128,1)", "rgb(128,128,128,0.5)", "rgb(128,128,128,0.2)"];
+
+// draw every piece; shade the selected piece and colour the pieces it can capture green
+function drawCaptureBoard(puzzle) {
+    puzzle.board.cells.flat().forEach(cell => {
+        let i = cell.rowNum;
+        let j = cell.colNum;
+        let div = getDiv(i, j);
+        let piece = puzzle.getCapturePiece(cell);
+        div.attr("style", "color:black");
+        div.html(piece ? gameGlyph(i, j, piece.type) : emptyCell(i, j));
+    });
+
+    let selected = puzzle.selected;
+    if (selected != null){
+        getDiv(selected.cell.rowNum, selected.cell.colNum).css("background", SELECTED_SHADE[selected.remainingMoves()]);
+        selected.outNeighbors().forEach(target =>
+            getDiv(target.cell.rowNum, target.cell.colNum).css("background", "#99ff99"));
+    }
+}
+
+// everything the Piece Meal page shows for a puzzle
+function showCapture(puzzle) {
+    drawCaptureBoard(puzzle);
+    $("#messageDisplay").html(puzzle.message);
+    setButtonActive("#undoButton", puzzle.canUndo());
+    setButtonActive("#advanceButton", puzzle.checkForSolved());
+}
+
+function captureSolutionHTML(puzzle) {
+    // moves are recorded while building the puzzle backwards, so show them in reverse.
+    // [...puzzle.moves] copies the list first: reverse() on its own would change puzzle.moves itself
+    let items = [...puzzle.moves].reverse().map(move => "<li>" + move + "</li>\n");
+    return "<ol>\n" + items.join("") + "</ol>\n";
 }
