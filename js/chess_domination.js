@@ -5,7 +5,6 @@
 class Domination {		
 	constructor(board) {
 		this.board = board;
-		board.init();
 		this.pieces =[];
 		this.cover =[];
 	}
@@ -15,7 +14,7 @@ class Domination {
 	}
 
 	startGame() {
-		gameDisplay.map = svgMap(this.pieces, this.cover, this.board.size);
+		gameDisplay.map = svgMap(this.occupiedCells(), this.cover, this.board.size);
 		gameDisplay.score = scoreDisplay(0,this.dominationScore(), this.independenceScore()); 	
 		evnts.fireEvent("refreshMap");
 		evnts.fireEvent("refreshScore");
@@ -29,7 +28,7 @@ class Domination {
 		this.cover = [];
 		this.pieces.forEach(selected => {
 			selected.neighbors().forEach(nbCell => {
-				if (!this.isInSet(nbCell.rowNum, nbCell.colNum, this.cover)){
+				if (!this.cover.includes(nbCell)){
 					this.cover.push(nbCell);
 					getDiv(nbCell.rowNum, nbCell.colNum).css("background","#99ff99");
 				}
@@ -39,15 +38,19 @@ class Domination {
 
 	// number of squares that are neither occupied nor attacked
 	dominationScore() {
+		let occupied = this.occupiedCells();
 		return this.board.cells.flat().filter(cell =>
-			!(this.isInSet(cell.rowNum, cell.colNum, this.cover)
-			  || this.isInSet(cell.rowNum, cell.colNum, this.pieces))).length;
+			!(this.cover.includes(cell) || occupied.includes(cell))).length;
 	}
 
 	// number of pieces that are attacked by another piece
 	independenceScore() {
-		return this.pieces.filter(cell =>
-			this.isInSet(cell.rowNum, cell.colNum, this.cover)).length;
+		return this.pieces.filter(piece => this.cover.includes(piece.cell)).length;
+	}
+
+	// the cells that have a piece on them
+	occupiedCells() {
+		return this.pieces.map(piece => piece.cell);
 	}
 
 	getCell(i, j) {
@@ -61,15 +64,6 @@ class Domination {
 	}
 	
 	
-	isInSet(i,j, set) {
-		// some() stops as soon as one element matches, like the early return did
-		return set.some(current => current.rowNum == i && current.colNum == j);
-	}
-
-	remove(i,j) {
-		this.pieces = this.pieces.filter(current => !(current.rowNum == i && current.colNum == j));
-	}
-	
 	selectCell(cell, target) {
 		let i = parseInt(target.getAttribute("data-row"));
 		let j = parseInt(target.getAttribute("data-col"));
@@ -78,17 +72,20 @@ class Domination {
 		if (target.localName === 'span' || target.localName ==='svg') {
 			parentTarget = target.parentNode;
 		}	
-		if (this.isInSet(i, j, this.pieces)) {
-			this.remove(i,j);
+		let existing = this.pieces.find(piece => piece.cell === targetCell);
+		if (existing) {
+			// clicking a piece removes it
+			this.pieces = this.pieces.filter(piece => piece !== existing);
 			targetCell.decoration = "";
 			parentTarget.innerHTML = emptyCell(i,j);	
 		} else {
-			targetCell.decoration = gameType.type;
-			this.pieces.push(targetCell);
-			parentTarget.innerHTML = gameGlyph(i,j, targetCell.decoration);
+			let piece = new Piece(gameType.type);
+			piece.setCell(targetCell);
+			this.pieces.push(piece);
+			parentTarget.innerHTML = gameGlyph(i,j, piece.type);
 		}
 		this.colourCells();
-		gameDisplay.map = svgMap(this.pieces, this.cover, this.board.size);
+		gameDisplay.map = svgMap(this.occupiedCells(), this.cover, this.board.size);
 		evnts.fireEvent("refreshMap");
 		gameDisplay.score = scoreDisplay(this.pieces.length, this.dominationScore(), this.independenceScore()); 
 		evnts.fireEvent("refreshScore");

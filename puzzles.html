@@ -64,7 +64,6 @@ function refresh() {
 	puzzles = removeElement(puzzles, selected);
 	let size = selected.size
 	let gameBoard = new Board(size);
-	gameBoard.init();
 	game = new Puzzle(gameBoard, selected);
 	$("#boardDisplay").html(htmlForBoard(game.getBoard()));
 	$("#puzzleDescription").html(game.puzzleDescription());	

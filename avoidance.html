@@ -42,10 +42,8 @@
 <script>
     let pieces = "queen";
     let gameBoard = new Board(8);
-    gameBoard.init();
     
     let set = new IndependentSet(pieces,8);
-    set.init();
     set.buildSet();
 
     let descriptor = set.getDescriptor();
@@ -58,7 +56,6 @@
          $("#boardDisplay").html(htmlForBoard(gameBoard)); 
 
        set = new IndependentSet(pieces,8);
-       set.init();
        set.buildSet();
 
         descriptor = set.getDescriptor();

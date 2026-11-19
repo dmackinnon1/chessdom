@@ -52,7 +52,6 @@
     function refresh(level = 0){
         depth = level;
         gameBoard = new Board(8);
-        gameBoard.init();
         let generator = new PuzzleGenerator(gameBoard,kings,pieces);
         puzzle = generator.puzzleOfDepth(levels[depth]);
         puzzle.resetPieceCounts();

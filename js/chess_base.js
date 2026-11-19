@@ -1,6 +1,30 @@
 'use strict';
 let gameType ={};
 
+// one-square steps: up, down, right, left, then the four diagonals
+const ORTHOGONAL_STEPS = [[1,0], [-1,0], [0,1], [0,-1]];
+const KING_STEPS = [...ORTHOGONAL_STEPS, [1,1], [1,-1], [-1,1], [-1,-1]];
+const KNIGHT_STEPS = [[-1,2], [-2,1], [-1,-2], [-2,-1], [1,2], [2,1], [1,-2], [2,-1]];
+
+/*
+* How each piece type moves: piece type -> function from a cell to the cells
+* a piece of that type standing there attacks (on an otherwise empty board).
+* Rooks, bishops and queens see all the way to the edge; capture.js checks
+* separately whether another piece is in the way.
+*/
+const MOVES = {
+	king:   cell => cell.steps(KING_STEPS),
+	knight: cell => cell.steps(KNIGHT_STEPS),
+	rook:   cell => [...cell.column(), ...cell.row()],
+	bishop: cell => [...cell.upDiagonal(), ...cell.downDiagonal()],
+	queen:  cell => [...MOVES.rook(cell), ...MOVES.bishop(cell)],
+};
+
+function attackedCells(cell, type) {
+	let rule = MOVES[type];
+	return rule ? rule(cell) : [];
+}
+
 class Cell {
 		
 	constructor(rowNum, colNum, board) {
@@ -11,6 +35,7 @@ class Cell {
 	}
 	
 	
+	// the cell i rows and j columns away, or null if that is off the board
 	neighbor(i,j) {
 		if ((this.rowNum + i < this.board.getRowSize())
 			&&(this.rowNum + i >= 0)
@@ -20,71 +45,12 @@ class Cell {
 		}
 		return null;
 	}
-	
-	nne(){
-		return this.neighbor(2,1);
+
+	// the cells reached by each (i, j) step that stays on the board
+	steps(offsets){
+		return offsets.map(([i, j]) => this.neighbor(i, j)).filter(cell => cell != null);
 	}
-	
-	nnw(){
-		return this.neighbor(2,-1);
-	}
-	
-	ene(){
-		return this.neighbor(1,2);		
-	}
-	
-	wnw(){
-		return this.neighbor(1,-2);
-	}
-	
-	sse(){
-		return this.neighbor(-2,1);
-	}
-	
-	ese(){
-		return this.neighbor(-1,2);
-	}
-	
-	ssw(){
-		return this.neighbor(-2,-1)
-	}
-	
-	wsw(){
-		return this.neighbor(-1,-2);
-	}
-	
-	north(){
-		return this.neighbor(1,0);
-	}
-	
-	south(){
-		return this.neighbor(-1,0);
-	}
-	
-	east(){
-		return this.neighbor(0,1);		
-	}
-	
-	west(){
-		return this.neighbor(0,-1);
-	}
-	
-	northEast(){
-		return this.neighbor(1,1);
-	}
-	
-	northWest(){
-		return this.neighbor(1,-1);
-	}
-	
-	southEast(){
-		return this.neighbor(-1,1)
-	}
-	
-	southWest(){
-		return this.neighbor(-1,-1);
-	}
-	
+
 	// every other cell in this cell's row
 	row(){
 		return this.board.cells[this.rowNum].filter(c => c.colNum !== this.colNum);
@@ -115,82 +81,9 @@ class Cell {
 		return [...this.ray(-1, 1), ...this.ray(1, -1)];
 	}
 
-	//refactor this and glyph to be functional
-	neighbors(){
-		if (this.decoration == "knight") { 
-			return this.knightNeighbors();
-		} 
-
-		if (this.decoration == "king") {
-			return this.kingNeighbors();
-		} 
-
-		if (this.decoration == "rook") {
-			return this.rookNeighbors();
-		}
-
-		if (this.decoration == "bishop") {
-			return this.bishopNeighbors();
-		}
-		if (this.decoration == "queen") {
-			return this.queenNeighbors();
-		}
-
-	}
-
-	queenNeighbors() {
-		let queen = this.rookNeighbors();
-		Array.prototype.push.apply(queen, this.bishopNeighbors());
-		return queen;
-	}
-
-	rookNeighbors(){
-		let rook = this.column();
-		Array.prototype.push.apply(rook, this.row());
-		return rook;
-	}
-
-	bishopNeighbors(){
-		let bish = this.upDiagonal();
-		Array.prototype.push.apply(bish, this.downDiagonal());
-		return bish;
-	}
-
-	kingNeighbors() {
-		let list = [];
-		if(this.north() != null) list.push(this.north());
-		if(this.south() != null) list.push(this.south());
-		if(this.east() != null) list.push(this.east());
-		if(this.west() != null) list.push(this.west());
-		
-		if(this.northEast() != null) list.push(this.northEast());
-		if(this.northWest() != null) list.push(this.northWest());
-		if(this.southEast() != null) list.push(this.southEast());
-		if(this.southWest() != null) list.push(this.southWest());				
-		return list;
-	}
-
-	knightNeighbors() {
-		let list = [];
-		if(this.ese() != null) list.push(this.ese());
-		if(this.sse() != null) list.push(this.sse());
-		if(this.wsw() != null) list.push(this.wsw());
-		if(this.ssw() != null) list.push(this.ssw());
-		
-		if(this.ene() != null) list.push(this.ene());
-		if(this.nne() != null) list.push(this.nne());
-		if(this.wnw() != null) list.push(this.wnw());
-		if(this.nnw() != null) list.push(this.nnw());
-		return list;
-	}
-
+	// the four cells directly up, down, right and left (used to grow Safe Harbour regions)
 	neumannNeighbors(){
-		var list = [];
-		if(this.north() != null) list.push(this.north());
-		if(this.south() != null) list.push(this.south());
-		if(this.east() != null) list.push(this.east());
-		if(this.west() != null) list.push(this.west());
-		return list;
+		return this.steps(ORTHOGONAL_STEPS);
 	}
 
 	toString() {
@@ -200,23 +93,15 @@ class Cell {
 	position(){
 		return "(" +this.rowNum + "," + this.colNum + ")";
 	}
-
-	isEqual(other) {
-		let result =(this.rowNum === other.rowNum) && (this.colNum === other.colNum);
-		return result;
-	}
 };
 
 class Board {
 
+	// a board is ready to use as soon as it is created: no separate init() step
 	constructor(size) {
 		this.size = size;
 		this.rowNum = size;
 		this.colNum = size;
-		this.cells = [];
-	}
-	
-	init() {
 		this.cells = Array.from({length: this.rowNum}, (_, i) =>
 			Array.from({length: this.colNum}, (_, j) => new Cell(i, j, this)));
 	}
@@ -231,6 +116,41 @@ class Board {
 	}
 	getColumnSize(){
 		return this.colNum;
+	}
+};
+
+/*
+* A piece of one type ("king", "knight", "rook", "bishop" or "queen") standing on a cell.
+* Placing a piece writes its type into the cell's decoration, which marks the cell
+* as occupied and tells the display which glyph to draw.
+* CapturePiece (capture.js) extends this; the other games use it as is.
+*/
+class Piece {
+	constructor(type) {
+		this.type = type;
+		this.cell = null;
+	}
+
+	isAt(i, j){
+		return this.cell.rowNum == i && this.cell.colNum == j;
+	}
+
+	setCell(cell){
+		this.cell = cell;
+		this.cell.decoration = this.type;
+	}
+
+	getCell(){
+		return this.cell;
+	}
+
+	// the cells this piece attacks
+	neighbors(){
+		return attackedCells(this.cell, this.type);
+	}
+
+	toString(){
+		return "" + this.type + " at " + this.cell;
 	}
 };
 
@@ -316,57 +236,17 @@ function svgMap(pieces, cover, size) {
 	return svg.build();
 };
 
-function knightGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-knight' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
-};
-
-function kingGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-king' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
-};
-
-function rookGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-tower' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
-};
-
-function bishopGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-bishop' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
-};
-
-function queenGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-queen' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
-};
-
-function blankGlyph(i,j){
-	let glyph = "<span class='glyphicon glyphicon-square-empty' ";
-	glyph += " data-row='"+ i + "' data-col='" + j + "'>";
-	return glyph;	
+// Bootstrap glyphicon name for each piece type
+const GLYPHS = {
+	knight: "knight",
+	king:   "king",
+	rook:   "tower",
+	bishop: "bishop",
+	queen:  "queen",
 };
 
 function gameGlyph(i,j, type) {
-	if (type == "knight"){
-		return knightGlyph(i,j);
-	}
-	if (type == "king"){
-		return kingGlyph(i,j);
-	}
-	if (type == "rook") {
-		return rookGlyph(i,j);
-	}
-	if (type == "bishop") {
-		return bishopGlyph(i,j);
-	}
-	if (type == "queen") {
-		return queenGlyph(i,j);
-	}
-	return blankGlyph(i,j);
+	let name = GLYPHS[type] ?? "square-empty";
+	return "<span class='glyphicon glyphicon-" + name + "' "
+		+ " data-row='"+ i + "' data-col='" + j + "'>";
 }

@@ -228,12 +228,12 @@ function joinWithAnd(items) {
 	return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
 }
 
-class CapturePiece {
-    constructor(board) {
-        this.board = board;
+// a Piece that also counts its captures (each piece may capture at most twice)
+// and knows which puzzle it belongs to, so it can look at the other pieces
+class CapturePiece extends Piece {
+    constructor(type) {
+        super(type);
         this.count = 0;
-        this.type = "knight";
-        this.cell = null;
 		this.puzzle = null;
     }
 
@@ -241,22 +241,6 @@ class CapturePiece {
         return 2 - this.count;
     }
 
-	toString(){
-		let str = "" +this.type + " at " + this.cell;
-		return str;
-	}
-
-    isAt(i,j){
-        return this.cell.rowNum==i && this.cell.colNum==j;
-    }
-
-    setCell(cell) {
-        this.cell = cell;
-        this.cell.decoration = this.type;
-    }
-    getCell(){
-        return this.cell;
-    }
     moveTo(target){
         this.cell.decoration="";
         this.count ++;
@@ -279,17 +263,12 @@ class CapturePiece {
 		return this.puzzle.pieces.filter(p => this.pieceIsReachable(p));
 	}
 
-	//cell neighbors
-	neighbors(){
-		return this.cell.neighbors();
-	}
-
 	pieceIsReachable(piece){
 		let targetCell = piece.getCell();
 		return this.cellIsReachable(targetCell);
 	}
     cellIsReachable(cell){
-        if(!this.cell.neighbors().includes(cell)){
+        if(!this.neighbors().includes(cell)){
             return false;
         }
         // kings and knights jump, so nothing can block them
@@ -311,7 +290,7 @@ class CapturePiece {
     }
 
     reachableUnoccupiedNeighbors(){
-        return this.cell.neighbors().filter(n => (this.cellIsReachable(n) && n.decoration === ""));
+        return this.neighbors().filter(n => (this.cellIsReachable(n) && n.decoration === ""));
     }
 
 }
@@ -352,19 +331,13 @@ class PuzzleGenerator{
     }
     initialPosition(){
         let startposition = this.board.randomStart();
-        let firstpiece = new CapturePiece(this.board);
-        if (this.includeKing){
-			firstpiece.type = "king";
-		} else {
-			firstpiece.type = this.randomType();
-		}
+        let firstpiece = new CapturePiece(this.includeKing ? "king" : this.randomType());
         firstpiece.setCell(startposition);
         this.puzzle.addPiece(firstpiece);
     }
     existingCapture(){
         let op = this.puzzle.randomAvailablePiece();
-        let newPiece = new CapturePiece(this.board);
-        newPiece.type = this.randomType();
+        let newPiece = new CapturePiece(this.randomType());
         this.puzzle.addPiece(newPiece);
 
         let nbs = op.reachableUnoccupiedNeighbors();

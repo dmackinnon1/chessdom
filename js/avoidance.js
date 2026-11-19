@@ -1,31 +1,6 @@
 'use strict';
 
-
-class AvoidancePiece {
-    constructor(board) {
-        this.board = board;
-        this.cell = null;
-		this.puzzle = null;
-    }
-
-    isAt(i,j){
-        return this.cell.rowNum==i && this.cell.colNum==j;
-    }
-
-    setCell(cell) {
-        this.cell = cell;
-        this.cell.decoration = this.type;
-    }
-    getCell(){
-        return this.cell;
-    }
-    
-	//cell neighbors
-	neighbors(){
-		return this.cell.neighbors();
-	}
-	
-}
+// Safe Harbour pieces need nothing beyond what Piece (chess_base.js) already does.
 
 class PuzzleDescriptorPosition {
 	constructor(i,j){
@@ -58,30 +33,23 @@ class IndependentSet {
 	constructor(type, size){
 		this.type = type;
 		this.board = new Board(size);
-		this.available = [];
+		this.available = this.board.cells.flat();
 		this.pieces = [];
 	}
 
-	init(){
-		this.board.init();
-		this.available = this.board.cells.flat();
-	}
-	
 	addToSet(){
 
 		//place a random piece;
 		let index = Math.floor(Math.random() * this.available.length);
 		let cell = this.available[index];
 
-		let piece = new AvoidancePiece(this.board);
-		piece.type = this.type;
+		let piece = new Piece(this.type);
 		piece.setCell(cell);
 		this.pieces.push(piece);
 
 		//remove the cell, and every cell the new piece attacks, from available
 		let nbs = piece.neighbors();
-		this.available = this.available.filter(c => c != cell &&
-			!nbs.some(n => c.rowNum == n.rowNum && c.colNum == n.colNum));
+		this.available = this.available.filter(c => c != cell && !nbs.includes(c));
 	}
 
 	buildSet(){
@@ -154,7 +122,8 @@ class AvoidancePuzzle {
 
 	getRegionID(i,j){
 		// findIndex returns -1 when no region matches, just as before
-		return this.regionCalculator.regions.findIndex(region => region.hasCell(i,j));
+		let cell = this.getCell(i,j);
+		return this.regionCalculator.regions.findIndex(region => region.hasCell(cell));
 	}
 
 	getRegionByID(id){
@@ -185,15 +154,14 @@ class AvoidancePuzzle {
 			let oldPiece = this.getPiece(oldCell.rowNum, oldCell.colNum);
 			this.pieces = this.pieces.filter(p => p !== oldPiece); 
 			region.removeExistingPieces();
-			if (oldCell.rowNum == i && oldCell.colNum ==j){
+			if (oldCell === targetCell){
 				removeOnly = true;
 			}
 		}
-		 
+
 		//3. Place a piece in the cell
 		if (!removeOnly){
-			let piece = new AvoidancePiece(this.board);
-			piece.type = this.type;
+			let piece = new Piece(this.type);
 			this.pieces.push(piece);
 			piece.setCell(targetCell);
 		}
@@ -235,7 +203,7 @@ class AvoidancePuzzle {
 
 	// pieces that another piece can capture
 	piecesInCover(){
-		return this.pieces.filter(p => this.cellInCellSet(p.getCell(), this.cover));
+		return this.pieces.filter(p => this.cover.includes(p.getCell()));
 	}
 
 	coverCount(){
@@ -246,15 +214,11 @@ class AvoidancePuzzle {
 		this.cover = [];
 		this.pieces.forEach(selected => {
 			selected.neighbors().forEach(nbCell => {
-				if (!this.cellInCellSet(nbCell,this.cover)){
+				if (!this.cover.includes(nbCell)){
 					this.cover.push(nbCell);
 				}
 			});
 		});
-	}
-
-	cellInCellSet(cell, set) {
-		return set.some(current => current.rowNum == cell.rowNum && current.colNum == cell.colNum);
 	}
 
 	getPiece(i, j) {
@@ -264,8 +228,7 @@ class AvoidancePuzzle {
 	
 	
 class Region {
-	constructor(board, startCell, exclusion){
-		this.board = board;
+	constructor(startCell, exclusion){
 		this.cells = [];
 		this.cells.push(startCell);
 		this.exclusion = [...exclusion];
@@ -279,7 +242,7 @@ class Region {
 		// (a cell next to two region cells appears twice, making it a more likely pick)
 		let viableCandidates = this.cells
 			.flatMap(c => c.neumannNeighbors())
-			.filter(c => !this.cellInCellSet(c, this.cells) && !this.cellInCellSet(c, this.exclusion));
+			.filter(c => !this.cells.includes(c) && !this.exclusion.includes(c));
 		if (viableCandidates.length !=0){
 			const randomIndex = Math.floor(Math.random() * viableCandidates.length);
 			return viableCandidates[randomIndex];	
@@ -296,12 +259,8 @@ class Region {
 		this.exclusion.push(cell);
 	}
 
-	cellInCellSet(cell, set) {
-		return set.some(current => current.rowNum == cell.rowNum && current.colNum == cell.colNum);
-	}
-
-	hasCell(i,j){
-		return this.cells.some(current => current.rowNum == i && current.colNum == j);
+	hasCell(cell){
+		return this.cells.includes(cell);
 	}
 
 	hasExistingPiece(){
@@ -326,7 +285,7 @@ class RegionCalculator{
     }
 
 	init(){
-		this.regions = this.initialSet.map(cell => new Region(this.board, cell, this.initialSet));
+		this.regions = this.initialSet.map(cell => new Region(cell, this.initialSet));
 	}
 
 	totalRegionSize(){

@@ -46,7 +46,6 @@ gameType.type = "knight";
 
 function refresh() {
 	var gameBoard = new Board(size);
-	gameBoard.init();
 	game = new Domination(gameBoard);
 	$("#boardDisplay").html(htmlForBoard(game.getBoard()));
 	setButtons();
