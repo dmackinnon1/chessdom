@@ -21,8 +21,8 @@ Each puzzle has this format:
 {
   "name": "8 queens on 8x8",
   "size": 8,
-  "cover": "true",
-  "unguard": "true",
+  "cover": true,
+  "unguard": true,
   "pieces": [
     {
       "name": "queen",
@@ -30,6 +30,6 @@ Each puzzle has this format:
     }
   ]
 }
-````
+```
 
 The puzzle above is the classic "8 queens" problem, one of the more difficult problems in the set.

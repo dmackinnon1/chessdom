@@ -1,17 +1,26 @@
 'use strict';
 
+/*
+* Piece Meal: every piece may capture at most twice, and the goal is to finish
+* with a single piece (the king, if there is one). Captures are only allowed
+* as real chess moves, and the king may never be captured.
+*
+* CapturePuzzle holds the state of one puzzle and knows nothing about the page:
+* after every change it fires the "gameChanged" event, and the display code
+* (bottom of this file) draws the puzzle from its state.
+*/
 class CapturePuzzle {
     constructor(board) {
         this.board = board;
         this.moves = [];
         this.pieces=[];
         this.selected = null;
-        this.target = null;
 		this.message = "Choose a piece.";
 		this.includeKing = true;
 		this.moveStack = [];
     }
 
+	// start every piece with its full two captures
 	resetPieceCounts(){
 		this.pieces.forEach(piece => piece.count = 0);
 	}
@@ -24,8 +33,6 @@ class CapturePuzzle {
     }
 	capture(source, target){
 		this.pieces = this.pieces.filter(p => p !== target);
-		let div = getDiv(source.cell.rowNum, source.cell.colNum);
-		div.html(emptyCell(source.cell.rowNum,source.cell.colNum));
         source.cell.decoration = "";
         target.cell.decoration = "";
 		let ogCell = source.cell;
@@ -44,20 +51,11 @@ class CapturePuzzle {
 		}
 		let move = this.moveStack.pop();
 		move.reverseMove();
-		this.colourCells();
 		this.message = "Choose a piece";
 		this.selected = null;
-		this.colourCells();
-		evnts.fireEvent("refreshMessage");
+		evnts.fireEvent("gameChanged");
 	}
 
-    getCell(i, j) {
-		return this.board.cells[i][j];
-	}
-    clicked(i,j, target){
-        let cell = this.getCell(i,j);
-		this.selectCell(cell, target);
-    }
 
 	checkForSolved(){
 		return this.pieces.length == 1;
@@ -126,12 +124,9 @@ class CapturePuzzle {
 		}
 	}
 
-    selectCell(cell, target) {
-		let i = parseInt(target.getAttribute("data-row"));
-		let j = parseInt(target.getAttribute("data-col"));
-		let targetCell = this.board.cells[i][j];
-
-		let clickedOn =this.getCapturePiece(i,j);
+    // called when a square is clicked
+    selectCell(cell) {
+		let clickedOn = this.getCapturePiece(cell);
 		if (this.selected == null && clickedOn!=null){
 			this.selected = clickedOn;
             if (this.selected.remainingMoves() === 1){
@@ -165,60 +160,18 @@ class CapturePuzzle {
 		} else {
 			this.checkForStuck();
 		}
-		this.colourCells();
-		evnts.fireEvent("refreshMessage");
-		
-		
+		evnts.fireEvent("gameChanged");
 	}
 
-    getCapturePiece(i, j) {
+    // the piece on this cell, or null if it is empty
+    getCapturePiece(cell) {
         // find() returns undefined when nothing matches; callers expect null
-        return this.pieces.find(p => p.isAt(i,j)) ?? null;
+        return this.pieces.find(p => p.cell === cell) ?? null;
     }
-
-    solutionHTML(){
-        // moves are recorded while building the puzzle backwards, so show them in reverse.
-        // [...this.moves] copies the list first: reverse() on its own would change this.moves itself
-        let items = [...this.moves].reverse().map(move => "<li>" + move + "</li>\n");
-        return "<ol>\n" + items.join("") + "</ol>\n";
-    }
-
-	messageHTML(){
-		return this.message;
-	}
 
     randomAvailablePiece(){
         let available = this.piecesWithMovesAndSpace();
         return available[Math.floor(Math.random() * available.length)];
-    }
-
-    colourCells() {
-        this.board.cells.flat().forEach(cell => {
-            let div = getDiv(cell.rowNum, cell.colNum);
-            div.attr("style", "color:black");
-            if (cell.decoration !=""){
-                div.html(gameGlyph(cell.rowNum, cell.colNum, cell.decoration));
-            }
-        });
-
-        if (this.selected != null){
-            let si = this.selected.cell.rowNum;
-            let sj= this.selected.cell.colNum;
-            let sdiv = getDiv(si, sj);
-            if (this.selected.remainingMoves() == 0) {
-                sdiv.css("background","rgb(128,128,128,1)");
-            } else if (this.selected.remainingMoves() == 1) {
-                sdiv.css("background","rgb(128,128,128,0.5)");
-            }else if(this.selected.remainingMoves() == 2){
-                sdiv.css("background","rgb(128,128,128,0.2)");
-            }
-
-
-            // highlight the pieces the selected piece can capture
-            this.selected.neighbors()
-                .filter(nbCell => this.selected.cellIsReachable(nbCell) && nbCell.decoration !== "")
-                .forEach(nbCell => getDiv(nbCell.rowNum, nbCell.colNum).css("background","#99ff99"));
-        }
     }
 }
 
@@ -228,12 +181,12 @@ function joinWithAnd(items) {
 	return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
 }
 
-class CapturePiece {
-    constructor(board) {
-        this.board = board;
+// a Piece that also counts its captures (each piece may capture at most twice)
+// and knows which puzzle it belongs to, so it can look at the other pieces
+class CapturePiece extends Piece {
+    constructor(type) {
+        super(type);
         this.count = 0;
-        this.type = "knight";
-        this.cell = null;
 		this.puzzle = null;
     }
 
@@ -241,22 +194,6 @@ class CapturePiece {
         return 2 - this.count;
     }
 
-	toString(){
-		let str = "" +this.type + " at " + this.cell;
-		return str;
-	}
-
-    isAt(i,j){
-        return this.cell.rowNum==i && this.cell.colNum==j;
-    }
-
-    setCell(cell) {
-        this.cell = cell;
-        this.cell.decoration = this.type;
-    }
-    getCell(){
-        return this.cell;
-    }
     moveTo(target){
         this.cell.decoration="";
         this.count ++;
@@ -279,17 +216,12 @@ class CapturePiece {
 		return this.puzzle.pieces.filter(p => this.pieceIsReachable(p));
 	}
 
-	//cell neighbors
-	neighbors(){
-		return this.cell.neighbors();
-	}
-
 	pieceIsReachable(piece){
 		let targetCell = piece.getCell();
 		return this.cellIsReachable(targetCell);
 	}
     cellIsReachable(cell){
-        if(!this.cell.neighbors().includes(cell)){
+        if(!this.neighbors().includes(cell)){
             return false;
         }
         // kings and knights jump, so nothing can block them
@@ -311,7 +243,7 @@ class CapturePiece {
     }
 
     reachableUnoccupiedNeighbors(){
-        return this.cell.neighbors().filter(n => (this.cellIsReachable(n) && n.decoration === ""));
+        return this.neighbors().filter(n => (this.cellIsReachable(n) && n.decoration === ""));
     }
 
 }
@@ -352,19 +284,13 @@ class PuzzleGenerator{
     }
     initialPosition(){
         let startposition = this.board.randomStart();
-        let firstpiece = new CapturePiece(this.board);
-        if (this.includeKing){
-			firstpiece.type = "king";
-		} else {
-			firstpiece.type = this.randomType();
-		}
+        let firstpiece = new CapturePiece(this.includeKing ? "king" : this.randomType());
         firstpiece.setCell(startposition);
         this.puzzle.addPiece(firstpiece);
     }
     existingCapture(){
         let op = this.puzzle.randomAvailablePiece();
-        let newPiece = new CapturePiece(this.board);
-        newPiece.type = this.randomType();
+        let newPiece = new CapturePiece(this.randomType());
         this.puzzle.addPiece(newPiece);
 
         let nbs = op.reachableUnoccupiedNeighbors();
@@ -378,9 +304,54 @@ class PuzzleGenerator{
             + newCell.position()  + " takes " + newPiece.type +" at " + ogCell.position() );
     }
 
+    // build a puzzle backwards: start from one piece and "un-capture" depth times.
+    // Each un-capture uses up one of a piece's two captures, so the counts are
+    // reset at the end to give the player a fresh puzzle.
     puzzleOfDepth(depth){
         this.initialPosition();
         range(depth).forEach(() => this.existingCapture());
+        this.puzzle.resetPieceCounts();
         return this.puzzle;
     }
+}
+
+/**
+* display: these functions read a puzzle and update the page
+*/
+
+// grey behind the selected piece: darker the fewer captures it has left
+const SELECTED_SHADE = ["rgb(128,128,128,1)", "rgb(128,128,128,0.5)", "rgb(128,128,128,0.2)"];
+
+// draw every piece; shade the selected piece and colour the pieces it can capture green
+function drawCaptureBoard(puzzle) {
+    puzzle.board.cells.flat().forEach(cell => {
+        let i = cell.rowNum;
+        let j = cell.colNum;
+        let div = getDiv(i, j);
+        let piece = puzzle.getCapturePiece(cell);
+        div.setAttribute("style", "color:black");
+        div.innerHTML = piece ? gameGlyph(piece.type) : emptyCell();
+    });
+
+    let selected = puzzle.selected;
+    if (selected != null){
+        getDiv(selected.cell.rowNum, selected.cell.colNum).style.background = SELECTED_SHADE[selected.remainingMoves()];
+        selected.outNeighbors().forEach(target =>
+            getDiv(target.cell.rowNum, target.cell.colNum).style.background = "#99ff99");
+    }
+}
+
+// everything the Piece Meal page shows for a puzzle
+function showCapture(puzzle) {
+    drawCaptureBoard(puzzle);
+    byId("messageDisplay").innerHTML = puzzle.message;
+    setButtonActive("#undoButton", puzzle.canUndo());
+    setButtonActive("#advanceButton", puzzle.checkForSolved());
+}
+
+function captureSolutionHTML(puzzle) {
+    // moves are recorded while building the puzzle backwards, so show them in reverse.
+    // [...puzzle.moves] copies the list first: reverse() on its own would change puzzle.moves itself
+    let items = [...puzzle.moves].reverse().map(move => "<li>" + move + "</li>\n");
+    return "<ol>\n" + items.join("") + "</ol>\n";
 }

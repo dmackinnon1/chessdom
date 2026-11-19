@@ -8,8 +8,7 @@
 'use strict';
 class Bldr {
 
-	constructor(name, id) {
-		this.id = id;
+	constructor(name) {
 		this.name = name;
 		this.attributes = [];
 		this.elements = [];
