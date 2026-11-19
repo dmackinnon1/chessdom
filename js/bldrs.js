@@ -32,16 +32,9 @@ class Bldr {
 	}
 
 	build() {
-		let s = "<" + this.name;
-		for(let i = 0; i< this.attributes.length; i++) {
-			s += " " + this.attributes[i].toString();
-		}
-		s += ">";
-		for(let i = 0; i< this.elements.length; i++) {
-			s += " " + this.elements[i].build();
-		}
-		s += "</" + this.name + ">";
-		return s;
+		let atts = this.attributes.map(a => " " + a.toString()).join("");
+		let children = this.elements.map(e => " " + e.build()).join("");
+		return "<" + this.name + atts + ">" + children + "</" + this.name + ">";
 	}
 };
 
