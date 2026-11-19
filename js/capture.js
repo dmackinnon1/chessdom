@@ -1,17 +1,19 @@
 'use strict';
 
 /*
-* Piece Meal: every piece may capture at most twice, and the goal is to finish
-* with a single piece (the king, if there is one). Captures are only allowed
-* as real chess moves, and the king may never be captured.
+* Piece Meal: every piece may capture a limited number of times (maxCaptures:
+* 2 in the original NYT puzzle; 1 to 3 here), and the goal is to finish with a
+* single piece (the king, if there is one). Captures are only allowed as real
+* chess moves, and the king may never be captured.
 *
 * CapturePuzzle holds the state of one puzzle and knows nothing about the page:
 * after every change it fires the "gameChanged" event, and the display code
 * (bottom of this file) draws the puzzle from its state.
 */
 class CapturePuzzle {
-    constructor(board) {
+    constructor(board, maxCaptures = 2) {
         this.board = board;
+        this.maxCaptures = maxCaptures;  // how many captures each piece may make
         this.moves = [];
         this.pieces=[];
         this.selected = null;
@@ -20,7 +22,7 @@ class CapturePuzzle {
 		this.moveStack = [];
     }
 
-	// start every piece with its full two captures
+	// give every piece its full allowance of captures
 	resetPieceCounts(){
 		this.pieces.forEach(piece => piece.count = 0);
 	}
@@ -65,17 +67,18 @@ class CapturePuzzle {
 		let isStuck = false;
 		let stuckReasons = [];
 		let stuckMessage = "You may be stuck";
-		const hasMoves =  this.pieces.filter((p) => p.count < 2);
-		const totalMoves = this.pieces.reduce((sum, p) => sum + (2 - p.count), 0);
+		const hasMoves =  this.pieces.filter((p) => p.canMove());
+		const totalMoves = this.pieces.reduce((sum, p) => sum + p.remainingMoves(), 0);
 		const totalPieces = this.pieces.length;
 		const king = this.pieces.find((p) => p.type == 'king');
 		const isolated = this.pieces.filter((p) => (p.inNeighbors().length == 0) && (p.outNeighbors().length == 0));
-		const paralized = this.pieces.filter((p) => (p.count == 2) && (p.inNeighbors().length == 0));
-		const twoMovers = this.pieces.filter((p) => p.count ==0);
-		
+		const paralized = this.pieces.filter((p) => !p.canMove() && (p.inNeighbors().length == 0));
+		// Reaching a piece that nothing can capture right now takes at least two captures:
+		// one to move into position and one to take it. These pieces can still do that.
+		const repositioners = this.pieces.filter((p) => p.remainingMoves() >= 2);
 
 		if (this.includeKing){
-			if ((king.count ==2) && (this.pieces.length > 1)){
+			if (!king.canMove() && (this.pieces.length > 1)){
 				isStuck = true;
 				stuckReasons.push("king is out of moves");
 			}
@@ -103,7 +106,7 @@ class CapturePuzzle {
 			isStuck = true;
 			stuckReasons.push("all pieces are out of moves");
 		} else {
-			if (paralized.length != 0 && twoMovers.length == 0){
+			if (paralized.length != 0 && repositioners.length == 0){
 				isStuck = true;
 				stuckReasons.push("there is a piece with no moves that can't be captured");
 			}
@@ -113,7 +116,7 @@ class CapturePuzzle {
 			isStuck = true;
 			stuckReasons.push("all pieces are isolated");
 		} else {
-			if (isolated.length != 0 && twoMovers.length == 0){
+			if (isolated.length != 0 && repositioners.length == 0){
 				isStuck = true;
 				stuckReasons.push("there is an isolated piece");
 			}
@@ -169,8 +172,11 @@ class CapturePuzzle {
         return this.pieces.find(p => p.cell === cell) ?? null;
     }
 
+    // a random piece that still has a capture left and an empty square it could move to,
+    // or null if there is none
     randomAvailablePiece(){
         let available = this.piecesWithMovesAndSpace();
+        if (available.length == 0) return null;
         return available[Math.floor(Math.random() * available.length)];
     }
 }
@@ -181,7 +187,7 @@ function joinWithAnd(items) {
 	return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
 }
 
-// a Piece that also counts its captures (each piece may capture at most twice)
+// a Piece that also counts its captures (at most puzzle.maxCaptures)
 // and knows which puzzle it belongs to, so it can look at the other pieces
 class CapturePiece extends Piece {
     constructor(type) {
@@ -191,7 +197,7 @@ class CapturePiece extends Piece {
     }
 
     remainingMoves(){
-        return 2 - this.count;
+        return this.puzzle.maxCaptures - this.count;
     }
 
     moveTo(target){
@@ -200,7 +206,7 @@ class CapturePiece extends Piece {
         this.setCell(target);
     }
     canMove(){
-        return this.count < 2;
+        return this.remainingMoves() > 0;
     }
 
     canMoveAndHasSpace(){
@@ -265,10 +271,10 @@ class PuzzleMove{
 }
 
 class PuzzleGenerator{
-    constructor(board, kings=true, pieceType='all') {
+    constructor(board, kings=true, pieceType='all', maxCaptures=2) {
         this.board = board;
 		this.includeKing = kings ;
-        this.puzzle = new CapturePuzzle(board);
+        this.puzzle = new CapturePuzzle(board, maxCaptures);
 		this.puzzle.includeKing = this.includeKing;
 		this.pieceType = pieceType;
 		
@@ -288,8 +294,10 @@ class PuzzleGenerator{
         firstpiece.setCell(startposition);
         this.puzzle.addPiece(firstpiece);
     }
+    // one backwards step; returns false if no piece can make it
     existingCapture(){
         let op = this.puzzle.randomAvailablePiece();
+        if (op == null) return false;
         let newPiece = new CapturePiece(this.randomType());
         this.puzzle.addPiece(newPiece);
 
@@ -302,17 +310,31 @@ class PuzzleGenerator{
         newPiece.setCell(ogCell);
         this.puzzle.moves.push("the " + op.type +" at "
             + newCell.position()  + " takes " + newPiece.type +" at " + ogCell.position() );
+        return true;
     }
 
     // build a puzzle backwards: start from one piece and "un-capture" depth times.
-    // Each un-capture uses up one of a piece's two captures, so the counts are
+    // Each un-capture uses up one of a piece's captures, so the counts are
     // reset at the end to give the player a fresh puzzle.
+    // Returns null if the generator gets stuck (every piece out of captures or boxed in),
+    // which happens more often with maxCaptures = 1 -- see generateCapturePuzzle.
     puzzleOfDepth(depth){
         this.initialPosition();
-        range(depth).forEach(() => this.existingCapture());
+        // every() stops at the first step that fails
+        let complete = range(depth).every(() => this.existingCapture());
+        if (!complete) return null;
         this.puzzle.resetPieceCounts();
         return this.puzzle;
     }
+}
+
+// a puzzle on a fresh size x size board, trying again if the generator gets stuck
+function generateCapturePuzzle(size, kings, pieceType, depth, maxCaptures, attempts = 100) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        let puzzle = new PuzzleGenerator(new Board(size), kings, pieceType, maxCaptures).puzzleOfDepth(depth);
+        if (puzzle != null) return puzzle;
+    }
+    return null;
 }
 
 /**
@@ -320,7 +342,8 @@ class PuzzleGenerator{
 */
 
 // grey behind the selected piece: darker the fewer captures it has left
-const SELECTED_SHADE = ["rgb(128,128,128,1)", "rgb(128,128,128,0.5)", "rgb(128,128,128,0.2)"];
+// (indexed by captures left: 0, 1, 2, 3)
+const SELECTED_SHADE = ["rgb(128,128,128,1)", "rgb(128,128,128,0.5)", "rgb(128,128,128,0.2)", "rgb(128,128,128,0.1)"];
 
 // draw every piece; shade the selected piece and colour the pieces it can capture green
 function drawCaptureBoard(puzzle) {
