@@ -41,30 +41,19 @@
 
 <script>
     let pieces = "queen";
-    let gameBoard = new Board(8);
-    
-    let set = new IndependentSet(pieces,8);
-    set.buildSet();
+    let puzzle;
 
-    let descriptor = set.getDescriptor();
-    
-    let puzzle = new AvoidancePuzzle(gameBoard, descriptor);
-    puzzle.init();
-    game = puzzle;
-    
+    // a new puzzle: a fresh board, a random independent set, and regions grown around it
     function refresh(){
-         $("#boardDisplay").html(htmlForBoard(gameBoard)); 
-
-       set = new IndependentSet(pieces,8);
-       set.buildSet();
-
-        descriptor = set.getDescriptor();
-        puzzle.descriptor = descriptor;
-        puzzle.init(); 
-        puzzle.colourCells();
+        let gameBoard = new Board(8);
+        $("#boardDisplay").html(htmlForBoard(gameBoard));
+        let descriptor = new IndependentSet(pieces, 8).getDescriptor();
+        puzzle = new AvoidancePuzzle(gameBoard, descriptor);
+        game = puzzle;
         $('#solution').collapse('hide');
-        $("#solutionDisplay").html(puzzle.solutionHTML());
-     }
+        $("#solutionDisplay").html(avoidanceSolutionHTML(descriptor));
+        showAvoidance(puzzle);
+    }
 
     function setButtons() {
         $(".btn-primary").addClass("btn-secondary");
@@ -94,9 +83,8 @@
         refresh();
     });
 
-     evnts.addCallback("refreshMessage", function () {
-            $("#messageDisplay").html(puzzle.messageHTML());
-            $("#puzzleDescription").html("<h4>" + puzzle.descriptionHTML() +"</h4>");
+     evnts.addCallback("gameChanged", function () {
+            showAvoidance(puzzle);
         });
 
 

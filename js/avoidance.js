@@ -1,6 +1,18 @@
 'use strict';
 
-// Safe Harbour pieces need nothing beyond what Piece (chess_base.js) already does.
+/*
+* Safe Harbour: the board is split into coloured regions, and the player must place
+* one piece in each region so that no piece can capture another.
+*
+* How a puzzle is made: IndependentSet places pieces at random so that none attack
+* each other; PuzzleDescriptor records where they are (this is the solution);
+* RegionCalculator grows a region around each of those squares until the board is
+* covered; AvoidancePuzzle is the game the player interacts with.
+*
+* AvoidancePuzzle knows nothing about the page: after every change it fires the
+* "gameChanged" event, and the display code (bottom of this file) draws it.
+* Safe Harbour pieces need nothing beyond what Piece (chess_base.js) already does.
+*/
 
 class PuzzleDescriptorPosition {
 	constructor(i,j){
@@ -13,19 +25,13 @@ class PuzzleDescriptorPosition {
 }
 
 class PuzzleDescriptor {
-	constructor(type, description){
+	constructor(type){
 		this.type = type;
-		this.description = description;
 		this.cells = [];
 	}
 
 	addCell(i,j){
 		this.cells.push(new PuzzleDescriptorPosition(i,j));
-	}
-
-	toHTML(){
-		let items = this.cells.map(position => "<li>" + position.toString() + "</li>");
-		return "<h5>Place "+ this.type + "s at these positions: </br>" + "<ul>" + items.join("") + "</ul></h5>";
 	}
 }
 
@@ -35,6 +41,7 @@ class IndependentSet {
 		this.board = new Board(size);
 		this.available = this.board.cells.flat();
 		this.pieces = [];
+		this.buildSet();
 	}
 
 	addToSet(){
@@ -60,61 +67,34 @@ class IndependentSet {
 	}
 
 	getDescriptor(){
-		let descriptor = new PuzzleDescriptor(this.type, "" + this.pieces.length);
+		let descriptor = new PuzzleDescriptor(this.type);
 		this.pieces.forEach(p => descriptor.addCell(p.getCell().rowNum, p.getCell().colNum));
 		return descriptor;
 	}
 	
 }
 
-// IndependentSet -> Descriptor -> RegionCalculator -> Puzzle
-
 class AvoidancePuzzle {
+	// a new puzzle on an empty board, with regions grown around the descriptor's squares
 	constructor(board, descriptor){
 		this.board = board;
 		this.descriptor = descriptor;
-		this.regionCalculator = null;
+		this.type = descriptor.type;
 		this.cover = [];
 		this.pieces = [];
 		this.message = "Not solved yet.";
-		this.type = descriptor.type;
-	}
-
-	init(){
-		this.message = "Not solved yet.";
-		this.type = this.descriptor.type;
-		this.removePieces();
 		// the descriptor holds positions; look up the matching cells on this puzzle's board
-		let initialSet = this.descriptor.cells.map(position => this.board.cells[position.row][position.col]);
-
-		this.regionCalculator = new RegionCalculator(this.board, initialSet);
-		this.regionCalculator.init();
-		this.regionCalculator.calculate();
-		evnts.fireEvent("refreshMessage");
+		let initialSet = descriptor.cells.map(position => board.getCell(position.row, position.col));
+		this.regionCalculator = new RegionCalculator(board, initialSet);
 	}
 
-	solutionHTML(){
-		return this.descriptor.toHTML();
-	}
-	removePieces(){
-		this.pieces.forEach(p => p.getCell().decoration = "");
-		this.pieces = [];
-	}
-
-	messageHTML(){
-		return this.message;
-	}
-
-	descriptionHTML(){
-		return "Place " + this.regionCalculator.regions.length + " independent " + this.descriptor.type + "s, one in each coloured region of the board.";
-	}
-	colourCells(){
-		this.regionCalculator.colourCells();
+	regions(){
+		return this.regionCalculator.regions;
 	}
 
 	// the region that contains this cell
 	regionFor(cell){
-		return this.regionCalculator.regions.find(region => region.hasCell(cell));
+		return this.regions().find(region => region.hasCell(cell));
 	}
 
 	// called when a square is clicked
@@ -124,46 +104,34 @@ class AvoidancePuzzle {
 			return;
 		} 
 
-		//1. Get the Region for the cell
+		//1. If the cell's region already has a piece, remove it
 		let region = this.regionFor(cell);
-		
-		//2. If the region has an piece remove it
-		let removeOnly = false;
-		if (region.hasExistingPiece()) {
-			let oldCell = region.getExistingPieceCell();
-			let oldPiece = this.pieceOn(oldCell);
-			this.pieces = this.pieces.filter(p => p !== oldPiece); 
-			region.removeExistingPieces();
-			if (oldCell === cell){
-				removeOnly = true;
-			}
+		let oldPiece = this.pieces.find(p => region.hasCell(p.cell));
+		if (oldPiece) {
+			this.pieces = this.pieces.filter(p => p !== oldPiece);
+			oldPiece.cell.decoration = "";
 		}
 
-		//3. Place a piece in the cell
-		if (!removeOnly){
+		//2. Place a piece in the cell -- unless the click was on the piece just removed
+		if (!oldPiece || oldPiece.cell !== cell){
 			let piece = new Piece(this.type);
 			this.pieces.push(piece);
 			piece.setCell(cell);
 		}
-		this.colourCells(); 
 
-		//highlight problems
+		//3. Work out which pieces are attacked, and whether the puzzle is finished
 		this.calculateCover();
-
-		this.checkAllInCover();
-		//4. Check for finished.
 		if (this.isSolved()){
 			this.message = "Solved!";
 		} else {
 			this.message = "Not solved yet. You've placed "+this.pieces.length 
-				+ " of " + this.regionCalculator.regions.length + " pieces. There are " + this.coverCount() + " pieces that can be captured by another piece.";
+				+ " of " + this.regions().length + " pieces. There are " + this.coverCount() + " pieces that can be captured by another piece.";
 		}
-		evnts.fireEvent("refreshMessage");
-		 
+		evnts.fireEvent("gameChanged");
 	}
 
 	isSolved(){
-		if (this.pieces.length != this.regionCalculator.regions.length){
+		if (this.pieces.length != this.regions().length){
 			return false;
 		}
 		if (this.coverCount() != 0){
@@ -172,15 +140,6 @@ class AvoidancePuzzle {
 		return true;
 	}
 	
-	colourInCover(p){
-		let div = getDiv(p.getCell().rowNum, p.getCell().colNum);
-        div.css("color","#FF0000");
-	}
-
-	checkAllInCover(){
-		this.piecesInCover().forEach(piece => this.colourInCover(piece));
-	}
-
 	// pieces that another piece can capture
 	piecesInCover(){
 		return this.pieces.filter(p => this.cover.includes(p.getCell()));
@@ -243,18 +202,6 @@ class Region {
 	hasCell(cell){
 		return this.cells.includes(cell);
 	}
-
-	hasExistingPiece(){
-		return this.cells.some(current => current.decoration != "");
-	}
-
-	getExistingPieceCell(){
-		return this.cells.find(current => current.decoration != "") ?? null;
-	}
-
-	removeExistingPieces(){
-		this.cells.forEach(current => current.decoration = "");
-	}
 }
 
 
@@ -262,12 +209,9 @@ class RegionCalculator{
     constructor(board, initialSet) { // initial testing is with queen
         this.board = board;
 		this.initialSet = initialSet;
-		this.regions = [];
-    }
-
-	init(){
 		this.regions = this.initialSet.map(cell => new Region(cell, this.initialSet));
-	}
+		this.calculate();
+    }
 
 	totalRegionSize(){
 		return this.regions.reduce((total, region) => total + region.cells.length, 0);
@@ -294,28 +238,49 @@ class RegionCalculator{
 			this.calculateOne();
 		}
 	}
+}
 
-	colourCells() {
-		let colourList = ["#99FF99", "#D98899", "#7A9EC2", "#E6C88A", "#B39BC8", 
-						 "#C98A70", "#76B5AE", "#A8A29E", "#E8DF6E", "#7CC2EB", 
-						  "#E6A378", "#C5D97E"];
-	
-		// colour the table cell (the div's parent) behind each square by region
-		this.regions.forEach((region, index) => {
-			region.cells.forEach(cell =>
-				getDiv(cell.rowNum, cell.colNum).parent().css("background", colourList[index]));
-		});
+/**
+* display: these functions read a puzzle and update the page
+*/
 
-		this.board.cells.flat().forEach(cell => {
-			let i = cell.rowNum;
-			let j = cell.colNum;
-			let div = getDiv(i, j);
-			div.attr("style", "color:black");
-			if (cell.decoration !=""){
-				div.html(gameGlyph(i,j, cell.decoration));
-			} else{
-				div.html(emptyCell(i,j));
-			}
-		});
-	}
+// one background colour per region (puzzles have at most 12 regions)
+const REGION_COLOURS = ["#99FF99", "#D98899", "#7A9EC2", "#E6C88A", "#B39BC8",
+                        "#C98A70", "#76B5AE", "#A8A29E", "#E8DF6E", "#7CC2EB",
+                        "#E6A378", "#C5D97E"];
+
+// colour each region, draw the pieces, and show attacked pieces in red
+function drawAvoidanceBoard(puzzle) {
+	// the region colour goes on the table cell (the div's parent) behind each square
+	puzzle.regions().forEach((region, index) => {
+		region.cells.forEach(cell =>
+			getDiv(cell.rowNum, cell.colNum).parent().css("background", REGION_COLOURS[index]));
+	});
+
+	let attacked = puzzle.piecesInCover().map(piece => piece.cell);
+	puzzle.board.cells.flat().forEach(cell => {
+		let i = cell.rowNum;
+		let j = cell.colNum;
+		let div = getDiv(i, j);
+		let piece = puzzle.pieceOn(cell);
+		div.attr("style", "color:black");
+		div.html(piece ? gameGlyph(i, j, piece.type) : emptyCell(i, j));
+		if (attacked.includes(cell)) {
+			div.css("color", "#FF0000");
+		}
+	});
+}
+
+// everything the Safe Harbour page shows for a puzzle
+function showAvoidance(puzzle) {
+	drawAvoidanceBoard(puzzle);
+	$("#messageDisplay").html(puzzle.message);
+	$("#puzzleDescription").html("<h4>Place " + puzzle.regions().length + " independent " + puzzle.type
+		+ "s, one in each coloured region of the board.</h4>");
+}
+
+// the solution: where the pieces of the original independent set were
+function avoidanceSolutionHTML(descriptor) {
+	let items = descriptor.cells.map(position => "<li>" + position.toString() + "</li>");
+	return "<h5>Place "+ descriptor.type + "s at these positions: </br>" + "<ul>" + items.join("") + "</ul></h5>";
 }
