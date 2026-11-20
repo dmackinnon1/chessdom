@@ -1,4 +1,4 @@
-# chessdom
+# chessPuzzles
 
 Interactive mathematical chess puzzles, in two families:
 
