@@ -94,12 +94,6 @@ The [Generator](https://dmackinnon1.github.io/chessdom/generator.html) page lets
 by hand, and [Tourist](https://dmackinnon1.github.io/chessdom/tourist.html) lets you try Warnsdorff's
 rule yourself.
 
-Some background on these puzzles:
-* [Hidato or a King's Tour](http://www.mathrecreation.com/2011/06/hidato-or-kings-tour.html)
-* [Kixote or Knight's Path Puzzles](http://www.mathrecreation.com/2011/06/kixote-or-knights-path-puzzles.html)
-* [Life Lessons from a Knight's Tour](http://www.mathrecreation.com/2016/12/life-lessons-from-knights-tour.html)
-* [Build Your Own Knight's Tour](http://www.mathrecreation.com/2017/01/build-your-own-knights-tour.html)
-
 ## Code
 
 Each page loads a few shared scripts from `js/` and one script for its game.
