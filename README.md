@@ -80,7 +80,7 @@ The [Generator](https://dmackinnon1.github.io/chessdom/generator.html) page lets
 by hand, and [Tourist](https://dmackinnon1.github.io/chessdom/tourist.html) lets you try Warnsdorff's
 rule yourself.
 
-### Joust
+### Joust (Isolation)
 Joust is an interactive game against a bot opponent. You and your opponent alternate in making moves each square that is 
 landed on becomes out of bounds for further moves. The goal is to box your opponent in so they cannot make further moves 
 while avoiding becoming boxed in yourself.
