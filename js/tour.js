@@ -174,12 +174,13 @@ function makeUnique(tour, hidden) {
 */
 
 // a picture of a path: the board, a line through the squares in order, a ring on the
-// first square and a dot on the last. cellSize is the width of a square in pixels.
-function svgTourMap(cells, rows = 8, columns = rows, cellSize = 30) {
+// first square and a dot on the last. cellSize is the width of a square in pixels;
+// display "inline-block" lets several small maps sit side by side.
+function svgTourMap(cells, rows = 8, columns = rows, cellSize = 30, display = "block") {
 	let half = cellSize / 2;
 	let svg = new Bldr("svg");
 	svg.att("align", "center").att("width", columns * cellSize).att("height", rows * cellSize);
-	svg.att("style", "display:block");
+	svg.att("style", "display:" + display);
 	// the board
 	range(columns).forEach(i => range(rows).forEach(j => {
 		if ((i + j) % 2 == 0){

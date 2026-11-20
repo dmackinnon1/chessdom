@@ -291,8 +291,12 @@ const GLYPHS = {
 	queen:  "queen",
 };
 
+// a Bootstrap icon by name, e.g. iconGlyph("remove-circle")
+function iconGlyph(name) {
+	return "<span class='glyphicon glyphicon-" + name + "'></span>";
+}
+
 // the icon for a piece type
 function gameGlyph(type) {
-	let name = GLYPHS[type] ?? "square-empty";
-	return "<span class='glyphicon glyphicon-" + name + "'></span>";
+	return iconGlyph(GLYPHS[type] ?? "square-empty");
 }
