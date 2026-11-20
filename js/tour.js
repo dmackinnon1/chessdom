@@ -173,6 +173,11 @@ function makeUnique(tour, hidden) {
 * display
 */
 
+// the plain colour of a square in the Tourist and Joust games: alternating white and light grey
+function boardShade(cell) {
+	return cell.rowNum % 2 != cell.colNum % 2 ? "white" : "lightgrey";
+}
+
 // a picture of a path: the board, a line through the squares in order, a ring on the
 // first square and a dot on the last. cellSize is the width of a square in pixels;
 // display "inline-block" lets several small maps sit side by side.
