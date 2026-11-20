@@ -1,9 +1,8 @@
 // Checks that the shared tour code (js/chess_base.js + js/tour.js) behaves exactly like
-// kixote's original code (kixote/js/), given the same random numbers. Needs only Node.js:
+// kixote's original code (kept in tests/kixote_original/ for this test), given the same random numbers. Needs only Node.js:
 //   node tests/tour_equivalence.js        (from the repository folder; takes a few seconds)
 // It compares moves for every piece type, generated tours, whole puzzles after making them
-// unique, every solution the solver finds, and the tour maps. Once the kixote/ folder is
-// retired this test can go too.
+// unique, every solution the solver finds, and the tour maps.
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const repo = path.join(__dirname, '..');
 function sandbox(files, seed) {
@@ -14,7 +13,7 @@ function sandbox(files, seed) {
   files.forEach(f => vm.runInContext(fs.readFileSync(path.join(repo, f), 'utf8'), ctx));
   return ctx;
 }
-const oldCtx = sandbox(['kixote/js/evnts.js', 'kixote/js/bldrs.js', 'kixote/js/chess_base.js', 'kixote/js/puzzles.js', 'kixote/js/solver.js'], 1);
+const oldCtx = sandbox(['tests/kixote_original/evnts.js', 'tests/kixote_original/bldrs.js', 'tests/kixote_original/chess_base.js', 'tests/kixote_original/puzzles.js', 'tests/kixote_original/solver.js'], 1);
 const newCtx = sandbox(['js/evnts.js', 'js/bldrs.js', 'js/chess_base.js', 'js/tour.js'], 1);
 const run = (ctx, code) => vm.runInContext(code, ctx);
 const NEW_NAME = { numbrix: 'wazir' };
